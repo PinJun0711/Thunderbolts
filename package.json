@@ -1,0 +1,31 @@
+{
+  "name": "thunderbolts-orders",
+  "version": "1.0.0",
+  "description": "Simple staff order interface with Express and MongoDB",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'No build step required'",
+    "postinstall": "echo 'Dependencies installed successfully'",
+    "amplify:build": "echo 'Amplify build completed'",
+    "vercel-build": "echo 'Vercel build completed'"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.893.0",
+    "@aws-sdk/client-sagemaker-runtime": "^3.893.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.6.1",
+    "serverless-http": "^4.0.0"
+  },
+  "devDependencies": {
+    "serverless-offline": "^14.4.0"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+*.zip
+.git
+.env
+.ebextensions
+.elasticbeanstalk
+*.log
+.DS_Store
+Thumbs.db

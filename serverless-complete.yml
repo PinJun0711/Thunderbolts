@@ -1,0 +1,129 @@
+service: thunderbolts-orders
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-southeast-5
+  stage: ${opt:stage, 'prod'}
+  environment:
+    NODE_ENV: production
+    MONGODB_URI: mongodb+srv://pinjun040711:Dxda6769@cluster0.pq1ueqp.mongodb.net/thunderbolts_orders?retryWrites=true&w=majority
+    S3_BUCKET: thunderbolts-training-data-${self:provider.stage}
+    SAGEMAKER_ROLE_ARN: !GetAtt SageMakerExecutionRole.Arn
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:ListBucket
+          Resource:
+            - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}"
+            - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*"
+        - Effect: Allow
+          Action:
+            - sagemaker:CreateTrainingJob
+            - sagemaker:DescribeTrainingJob
+            - sagemaker:StopTrainingJob
+            - sagemaker:ListTrainingJobs
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+functions:
+  # Main API function
+  api:
+    handler: server.js
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: true
+      - http:
+          path: /
+          method: any
+          cors: true
+
+  # SageMaker training function
+  sagemakerTraining:
+    handler: handlers/sagemaker-training.handler
+    events:
+      - http:
+          path: /api/sagemaker/train
+          method: post
+          cors: true
+      - http:
+          path: /api/sagemaker/status
+          method: get
+          cors: true
+
+  # Scheduled data export (runs daily)
+  scheduledExport:
+    handler: handlers/sagemaker-training.handler
+    events:
+      - schedule: rate(1 day)
+
+resources:
+  Resources:
+    # S3 bucket for training data
+    TrainingDataBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.S3_BUCKET}
+        VersioningConfiguration:
+          Status: Enabled
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteOldVersions
+              Status: Enabled
+              ExpirationInDays: 30
+
+    # SageMaker execution role
+    SageMakerExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ThunderboltsSageMakerRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: sagemaker.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: SageMakerExecutionPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                    - s3:ListBucket
+                  Resource:
+                    - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}"
+                    - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*"
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: "*"
+
+  Outputs:
+    ApiUrl:
+      Description: "API Gateway endpoint URL"
+      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${self:provider.stage}/"
+    S3Bucket:
+      Description: "S3 bucket for training data"
+      Value: !Ref TrainingDataBucket
+    SageMakerRole:
+      Description: "SageMaker execution role ARN"
+      Value: !GetAtt SageMakerExecutionRole.Arn

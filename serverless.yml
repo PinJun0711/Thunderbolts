@@ -1,0 +1,117 @@
+service: thunderbolts-orders
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-southeast-5
+  stage: ${opt:stage, 'dev'}
+  environment:
+    NODE_ENV: production
+    MONGODB_URI: ${env:MONGODB_URI}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - sagemaker:*
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+functions:
+  # Health check
+  health:
+    handler: handlers/health.handler
+    events:
+      - http:
+          path: /api/health
+          method: get
+          cors: true
+
+  # Menu endpoints
+  getMenu:
+    handler: handlers/menu.handler
+    events:
+      - http:
+          path: /api/menu
+          method: get
+          cors: true
+
+  # Stock endpoints
+  getStock:
+    handler: handlers/stock.handler
+    events:
+      - http:
+          path: /api/stock
+          method: get
+          cors: true
+
+  # Order endpoints
+  createOrder:
+    handler: handlers/orders.handler
+    events:
+      - http:
+          path: /api/orders
+          method: post
+          cors: true
+
+  getOrders:
+    handler: handlers/orders.handler
+    events:
+      - http:
+          path: /api/orders
+          method: get
+          cors: true
+
+  getActiveTables:
+    handler: handlers/orders.handler
+    events:
+      - http:
+          path: /api/active-tables
+          method: get
+          cors: true
+
+  completeOrder:
+    handler: handlers/orders.handler
+    events:
+      - http:
+          path: /api/orders/{id}/complete
+          method: post
+          cors: true
+
+  # SageMaker endpoints
+  trainModel:
+    handler: handlers/sagemaker.handler
+    events:
+      - http:
+          path: /api/sagemaker/train
+          method: post
+          cors: true
+
+  getPredictions:
+    handler: handlers/sagemaker.handler
+    events:
+      - http:
+          path: /api/sagemaker/predict
+          method: get
+          cors: true
+
+  # Static files (serve frontend)
+  serveFrontend:
+    handler: handlers/static.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: true
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000

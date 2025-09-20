@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Restaurant POS - Orders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #0b1220; color: #e6e9ef; }
+      .app { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; height: 100vh; padding: 16px; box-sizing: border-box; }
+      .panel { background: #111828; border: 1px solid #1f2a44; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+      .panel header { padding: 14px 16px; border-bottom: 1px solid #1f2a44; display: flex; align-items: center; justify-content: space-between; }
+      .title { font-size: 16px; font-weight: 600; }
+      .controls { display: flex; gap: 8px; align-items: center; }
+      .field { display: flex; align-items: center; gap: 8px; }
+      label { font-size: 12px; color: #a3acc2; }
+      input, select { background: #0f1627; border: 1px solid #233150; color: #e6e9ef; padding: 8px 10px; border-radius: 8px; font-size: 14px; }
+      .menu { padding: 14px; overflow: auto; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .menu-item { background: #0f1627; border: 1px solid #1f2a44; border-radius: 10px; padding: 0; cursor: pointer; transition: transform .05s ease, border-color .15s ease; overflow: hidden; text-align: left; }
+      .menu-item:hover { transform: translateY(-1px); border-color: #3353ff; }
+      .thumb { height: 120px; width: 100%; object-fit: cover; display: block; }
+      .menu-meta { padding: 10px 12px; }
+      .menu-item h3 { margin: 0 0 4px 0; font-size: 14px; color: #fff; }
+      .price { color: #c7cfdf; font-weight: 600; }
+      .menu-item small { color: #c7cfdf; }
+      .cart { display: flex; flex-direction: column; height: 100%; }
+      .cart-body { padding: 0; overflow: auto; }
+      .cart-list { list-style: none; margin: 0; padding: 0; }
+      .cart-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #1f2a44; }
+      .cart-item h4 { margin: 0 0 4px 0; font-size: 14px; }
+      .meta { color: #96a0b8; font-size: 12px; }
+      .row-actions { display: flex; gap: 6px; align-items: center; }
+      .btn { background: #3353ff; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; }
+      .btn.secondary { background: #18223a; color: #e6e9ef; border: 1px solid #233150; }
+      .btn.danger { background: #e5484d; }
+      .cart-footer { padding: 14px 16px; border-top: 1px solid #1f2a44; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+      .status { font-size: 12px; color: #96a0b8; }
+      .summary { text-align: right; }
+      .summary strong { display: block; font-size: 16px; }
+      .toast { position: fixed; right: 16px; bottom: 16px; background: #111; color: #fff; padding: 10px 12px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: all .25s ease; }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      /* table selector buttons */
+      .table-btn { background: #0f1627; color: #e6e9ef; border: 1px solid #233150; border-radius: 10px; padding: 12px; cursor: pointer; }
+      .table-btn.busy { background: #ff7a45; border-color: #ff7a45; color: #1a1a1a; }
+      .table-btn.busy::after { content: none; }
+      .table-btn.selected { outline: 2px solid #3353ff; }
+      /* modal */
+      .modal { position: fixed; inset: 0; background: rgba(9, 14, 25, 0.6); display: none; align-items: center; justify-content: center; padding: 16px; }
+      .modal.open { display: flex; }
+      .dialog { background: #0f1627; border: 1px solid #233150; border-radius: 12px; padding: 16px; width: 360px; }
+      .dialog h3 { margin: 0 0 12px 0; font-size: 16px; }
+      .form-grid { display: grid; gap: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <section class="panel">
+        <header>
+          <div class="title">Menu</div>
+          <div class="controls field">
+            <label for="filter">Search</label>
+            <input id="filter" type="text" placeholder="Type to filter..." />
+          </div>
+        </header>
+        <div class="menu">
+          <div class="grid" id="menu-grid"></div>
+        </div>
+      </section>
+
+      <section class="panel cart">
+        <header>
+          <div class="title">Order</div>
+          <div class="controls">
+            <div class="field"><label for="table-display">Table</label><input id="table-display" type="text" disabled style="width:80px" placeholder="-" /></div>
+            <div class="field"><label for="pax">Pax</label><input id="pax" type="number" min="1" value="1" style="width:80px"></div>
+            <button class="btn secondary" id="clear-all">Clear</button>
+          </div>
+        </header>
+        <div class="cart-body">
+          <ul class="cart-list" id="items"></ul>
+        </div>
+        <div class="cart-footer">
+          <div>
+            <div class="status" id="status">Ready</div>
+          </div>
+          <div class="summary">
+            <small class="meta" id="item-count">0 items</small>
+            <strong>Total qty: <span id="total-qty">0</span></strong>
+            <strong>Total: RM <span id="total-amount">0.00</span></strong>
+            <button class="btn" id="confirm">Confirm & Send</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast">Saved</div>
+    <div class="modal open" id="pax-modal">
+      <div class="dialog">
+        <h3>Choose Table & Pax</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Tables</label>
+            <div id="tables-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+          </div>
+          <div class="field"><label for="pax-initial">Pax</label><input id="pax-initial" type="number" min="1" value="1" /></div>
+          <div class="controls" style="justify-content:flex-end">
+            <button class="btn" id="pax-continue">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="edit-modal">
+      <div class="dialog">
+        <h3>Edit Item</h3>
+        <div class="form-grid">
+          <div class="field"><label>Item</label><input id="edit-name" type="text" disabled /></div>
+          <div class="field"><label>Quantity</label><input id="edit-qty" type="number" min="1" value="1" /></div>
+          <div class="field"><label>Spices/Options</label><select id="edit-spices"></select></div>
+          <div class="field"><label>Requirement</label><input id="edit-req" type="text" placeholder="no peanuts, less oil" /></div>
+          <div class="controls" style="justify-content:flex-end">
+            <button class="btn secondary" id="edit-cancel">Cancel</button>
+            <button class="btn" id="edit-save">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let MENU = [];
+
+      const $ = (id) => document.getElementById(id);
+      const itemsEl = $('items');
+      const toast = $('toast');
+      const menuGrid = $('menu-grid');
+      const editModal = $('edit-modal');
+      const paxModal = $('pax-modal');
+      const paxInitial = $('pax-initial');
+      const paxInput = $('pax');
+      const tablesGrid = $('tables-grid');
+      const tableDisplay = $('table-display');
+      let editingIndex = -1;
+      let selectedTable = '';
+
+      function renderMenu(filter = '') {
+        menuGrid.innerHTML = '';
+        MENU
+          .filter(m => m.name.toLowerCase().includes(filter.toLowerCase()))
+          .forEach(m => {
+            const card = document.createElement('button');
+            card.className = 'menu-item';
+            const imgSrc = m.imageUrl || m.img || '';
+            card.innerHTML = `<img class="thumb" src="${imgSrc}" alt="${m.name}"><div class="menu-meta"><h3>${m.name}</h3><div class="price">RM ${Number(m.price || 0).toFixed(2)}</div></div>`;
+            card.addEventListener('click', () => addItem({ foodId: m.foodId || m.id, foodName: m.name, category: m.category || 'food', quantity: 1, spices: 'Normal', requirement: '', unitPrice: Number(m.price || 0) }));
+            menuGrid.appendChild(card);
+          });
+      }
+
+      const state = { items: [] };
+
+      function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      function renderItems() {
+        itemsEl.innerHTML = '';
+        let totalQty = 0;
+        let totalAmount = 0;
+        state.items.forEach((it, idx) => {
+          totalQty += it.quantity;
+          const unit = Number(it.unitPrice || 0);
+          const line = unit * it.quantity;
+          totalAmount += line;
+          const li = document.createElement('li');
+          li.className = 'cart-item';
+          li.innerHTML = `
+            <div>
+              <h4>${it.foodName}</h4>
+              <div class="meta">RM ${unit.toFixed(2)} × ${it.quantity} = RM ${line.toFixed(2)} · Spices: ${it.spices || '-'} · Req: ${it.requirement || '-'}</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn secondary" data-edit="${idx}">Edit</button>
+              <button class="btn danger" data-remove="${idx}">Remove</button>
+            </div>
+          `;
+          itemsEl.appendChild(li);
+        });
+        $('item-count').textContent = `${state.items.length} item${state.items.length !== 1 ? 's' : ''}`;
+        $('total-qty').textContent = String(totalQty);
+        $('total-amount').textContent = totalAmount.toFixed(2);
+      }
+
+      function addItem(item) {
+        // Merge identical items (same food and no special requirement). If both have empty requirement and same spices.
+        const canMerge = (it) => it.foodId === item.foodId && (item.requirement.trim() === '' && (it.requirement || '').trim() === '') && (it.spices || '').trim() === (item.spices || '').trim();
+        const existingIndex = state.items.findIndex(canMerge);
+        if (existingIndex >= 0) {
+          state.items[existingIndex].quantity += item.quantity;
+        } else {
+          state.items.push(item);
+        }
+        renderItems();
+      }
+
+      $('filter').addEventListener('input', (e) => {
+        renderMenu(e.target.value);
+      });
+
+      $('pax-continue').addEventListener('click', () => {
+        const paxVal = Math.max(1, parseInt(paxInitial.value || '1', 10));
+        const tableVal = (selectedTable || '').trim();
+        if (!tableVal) { showToast('Please select a table (1-10)'); return; }
+        paxInput.value = String(paxVal);
+        tableDisplay.value = tableVal;
+        paxModal.classList.remove('open');
+      });
+
+      itemsEl.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t.dataset.remove) {
+          const idx = Number(t.dataset.remove);
+          state.items.splice(idx, 1);
+          renderItems();
+        }
+        if (t.dataset.edit) {
+          editingIndex = Number(t.dataset.edit);
+          const current = state.items[editingIndex];
+          $('edit-name').value = current.foodName;
+          $('edit-qty').value = String(current.quantity);
+          const spicesSel = $('edit-spices');
+          spicesSel.innerHTML = '';
+          const opts = getSpiceOptions(current.category || inferCategory(current.foodId));
+          opts.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; spicesSel.appendChild(o); });
+          spicesSel.value = current.spices || 'Normal';
+          $('edit-req').value = current.requirement || '';
+          editModal.classList.add('open');
+        }
+      });
+
+      $('edit-cancel').addEventListener('click', () => {
+        editModal.classList.remove('open');
+        editingIndex = -1;
+      });
+
+      $('edit-save').addEventListener('click', () => {
+        if (editingIndex < 0) return;
+        const qty = Math.max(1, parseInt($('edit-qty').value || '1', 10));
+        const sp = $('edit-spices').value.trim();
+        const req = $('edit-req').value.trim();
+        const current = state.items[editingIndex];
+        state.items[editingIndex] = { ...current, quantity: qty, spices: sp, requirement: req };
+        editModal.classList.remove('open');
+        editingIndex = -1;
+        renderItems();
+      });
+
+      $('clear-all').addEventListener('click', () => {
+        state.items = [];
+        renderItems();
+      });
+
+      $('confirm').addEventListener('click', async () => {
+        const pax = Math.max(1, parseInt($('pax').value || '1', 10));
+        if (!state.items.length) {
+          showToast('Please add at least one item');
+          return;
+        }
+        const payload = { pax, table: (tableDisplay.value || '').trim(), items: state.items };
+        $('status').textContent = 'Sending...';
+        try {
+          const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.status === 409) {
+            const body = await res.json().catch(() => ({}));
+            showToast('This table already has an active order');
+            $('status').textContent = 'Table in use';
+            return;
+          }
+          if (!res.ok) throw new Error('Failed');
+          await res.json();
+          showToast('Order sent');
+          $('status').textContent = 'Saved';
+          state.items = [];
+          renderItems();
+        } catch (e) {
+          console.error(e);
+          $('status').textContent = 'Error saving';
+          showToast('Error saving');
+        }
+      });
+
+      async function loadMenu() {
+        try {
+          const res = await fetch('/api/menu');
+          if (!res.ok) throw new Error('Failed to load menu');
+          MENU = await res.json();
+        } catch (e) {
+          console.error(e);
+          MENU = [];
+        }
+        renderMenu();
+      }
+
+      function getSpiceOptions(category) {
+        const cat = (category || '').toLowerCase();
+        if (cat === 'drinks' || cat === 'beverages' || cat === 'beverage') {
+          return ['Normal', 'Less ice', 'No ice', 'Less sweet', 'No sugar'];
+        }
+        return ['Normal', 'Less spicy', 'Extra spicy', 'No chili'];
+      }
+
+      function inferCategory(foodId) { return (MENU.find(m => (m.foodId || m.id) === foodId)?.category) || 'food'; }
+
+      loadMenu();
+      renderItems();
+
+      // Build interactive tables grid with occupancy
+      async function loadActiveTables() {
+        try {
+          const res = await fetch('/api/active-tables');
+          const active = res.ok ? await res.json() : [];
+          const map = new Map(active.map(a => [String(a.table), a.activeOrders]));
+          tablesGrid.innerHTML = '';
+          for (let i = 1; i <= 10; i++) {
+            const t = String(i);
+            const btn = document.createElement('button');
+            const occupied = (map.get(t) || 0) > 0;
+            btn.className = 'table-btn' + (occupied ? ' busy' : '');
+            btn.textContent = `Table ${t}`;
+            btn.addEventListener('click', () => {
+              selectedTable = t;
+              // highlight selection
+              [...tablesGrid.children].forEach(c => c.classList.remove('selected'));
+              btn.classList.add('selected');
+            });
+            tablesGrid.appendChild(btn);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      loadActiveTables();
+    </script>
+  </body>
+  </html>
+
+

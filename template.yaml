@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Thunderbolts Orders API with SageMaker Integration
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        NODE_ENV: production
+        MONGODB_URI: mongodb+srv://pinjun040711:Dxda6769@cluster0.pq1ueqp.mongodb.net/thunderbolts_orders?retryWrites=true&w=majority
+
+Resources:
+  # Main API Function
+  ThunderboltsAPI:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: server.handler
+      MemorySize: 1024
+      Timeout: 30
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            Cors:
+              AllowMethods: "'*'"
+              AllowHeaders: "'*'"
+              AllowOrigin: "'*'"
+        RootApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+            Cors:
+              AllowMethods: "'*'"
+              AllowHeaders: "'*'"
+              AllowOrigin: "'*'"
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sagemaker:CreateTrainingJob
+                - sagemaker:DescribeTrainingJob
+                - sagemaker:StopTrainingJob
+                - sagemaker:ListTrainingJobs
+                - sagemaker:InvokeEndpoint
+              Resource: "*"
+
+  # SageMaker Training Function
+  SageMakerTraining:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handlers/sagemaker-direct.handler
+      MemorySize: 512
+      Timeout: 60
+      Events:
+        TrainingApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/sagemaker/train
+            Method: POST
+            Cors:
+              AllowMethods: "'*'"
+              AllowHeaders: "'*'"
+              AllowOrigin: "'*'"
+        PredictionApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/sagemaker/predict
+            Method: GET
+            Cors:
+              AllowMethods: "'*'"
+              AllowHeaders: "'*'"
+              AllowOrigin: "'*'"
+        # Daily training schedule
+        DailyTraining:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+            Description: "Daily model training with MongoDB data"
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sagemaker:CreateTrainingJob
+                - sagemaker:DescribeTrainingJob
+                - sagemaker:StopTrainingJob
+                - sagemaker:ListTrainingJobs
+                - sagemaker:InvokeEndpoint
+              Resource: "*"
+
+Outputs:
+  ThunderboltsApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  ThunderboltsFunction:
+    Description: "Main Lambda Function ARN"
+    Value: !GetAtt ThunderboltsAPI.Arn
+  SageMakerFunction:
+    Description: "SageMaker Lambda Function ARN"
+    Value: !GetAtt SageMakerTraining.Arn

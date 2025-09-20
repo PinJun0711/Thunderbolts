@@ -1,0 +1,19 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo Installing dependencies...
+        - npm ci
+    build:
+      commands:
+        - echo Build started on `date`
+        - echo "Node.js Express app - no build step required"
+        - echo "Setting up environment variables..."
+  artifacts:
+    baseDirectory: .
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
