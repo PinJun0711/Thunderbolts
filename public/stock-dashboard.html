@@ -9,7 +9,6 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="config.js"></script>
     <style>
       * {
         margin: 0;
@@ -449,11 +448,11 @@
     <div class="container">
       <!-- Navigation -->
       <nav class="navigation">
-        <a href="index.html" class="nav-link">POS System</a>
-        <a href="stock-dashboard.html" class="nav-link active"
+        <a href="/" class="nav-link">POS System</a>
+        <a href="/stock" class="nav-link active"
           >Stock Dashboard</a
         >
-        <a href="cooking-dashboard.html" class="nav-link">Cooking Efficiency</a>
+        <a href="/cooking" class="nav-link">Cooking Efficiency</a>
       </nav>
 
       <!-- Header -->
@@ -597,6 +596,53 @@
     </div>
 
     <script>
+      // Configuration for API endpoints
+      const CONFIG = {
+        // Set to true to use Lambda endpoints, false for local server
+        USE_LAMBDA: false,
+        
+        // Lambda API Gateway URL (replace with your actual deployed URL)
+        LAMBDA_BASE_URL: 'https://7mx6s4t0m9.execute-api.ap-southeast-5.amazonaws.com/default',
+        
+        // Auto-detect base URL based on current location
+        getBaseUrl() {
+          if (this.USE_LAMBDA) {
+            return this.LAMBDA_BASE_URL;
+          }
+          
+          // If running on same server (EC2), use relative URLs
+          // If running locally, use localhost
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          
+          if (isLocalhost) {
+            return 'http://localhost:3000';
+          } else {
+            // On EC2 or any other server, use relative URLs (same origin)
+            return '';
+          }
+        },
+        
+        // API endpoint paths
+        ENDPOINTS: {
+          MENU: '/api/menu',
+          STOCK: '/api/stock',
+          ORDERS: '/api/orders',
+          ACTIVE_TABLES: '/api/active-tables',
+          COOKING_SEQUENCE: '/api/cooking-sequence', // MongoDB endpoint
+          FORECAST: '/api/forecast',
+          RESTOCK: '/api/stock/restock'
+        },
+        
+        // Get full URL for an endpoint
+        getUrl(endpoint) {
+          return this.getBaseUrl() + endpoint;
+        }
+      };
+      
+      // Export for use in other scripts
+      window.CONFIG = CONFIG;
+    </script>
+    <script>
       let stockData = [];
       let stockChart = null;
 
@@ -604,6 +650,8 @@
       document.addEventListener("DOMContentLoaded", function () {
         loadStockData();
         initializeChart();
+        // Auto-load forecast data on page load
+        generateForecast();
       });
 
       // Load stock data from API
@@ -663,11 +711,6 @@
                                           item._id
                                         }', '${item.name}')">
                                             📦 Add
-                                        </button>
-                                        <button class="btn btn-primary btn-sm" onclick="viewHistory('${
-                                          item._id
-                                        }')">
-                                            📊 History
                                         </button>
                                     </div>
                                 </td>
@@ -953,6 +996,9 @@
         try {
           // Fetch latest forecast data
           const response = await fetch("/api/forecast/latest");
+          
+          console.log('Forecast response status:', response.status);
+          console.log('Forecast response headers:', response.headers.get('content-type'));
 
           if (!response.ok) {
             if (response.status === 404) {
@@ -960,10 +1006,19 @@
                 "No forecast data available. Please save your forecast data first."
               );
             }
-            throw new Error("Failed to fetch forecast data");
+            throw new Error(`Failed to fetch forecast data: ${response.status} ${response.statusText}`);
+          }
+
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response received:', text.substring(0, 200));
+            throw new Error('Server returned non-JSON response. Please check the API endpoint.');
           }
 
           const forecastData = await response.json();
+          console.log('Forecast data received:', forecastData);
           renderForecastData(forecastData);
         } catch (error) {
           console.error("Error loading forecast:", error);
@@ -988,6 +1043,14 @@
         }
 
         const timestamp = new Date(forecastData.timestamp).toLocaleString();
+        
+        // Create a map of ingredient names to their units from stock data
+        const ingredientUnits = {};
+        if (stockData && stockData.length > 0) {
+          stockData.forEach(item => {
+            ingredientUnits[item.name.toLowerCase()] = item.unit;
+          });
+        }
 
         const forecastHTML = `
                  <div style="margin-bottom: 20px;">
@@ -1035,13 +1098,13 @@
                                         <span class="forecast-name">7-Day Usage:</span>
                                         <span class="forecast-value">${
                                           ingredient["7-Day Usage"]
-                                        } ${ingredient.Unit || "units"}</span>
+                                        } ${ingredient.Unit || ingredientUnits[ingredient.Ingredient?.toLowerCase()] || "units"}</span>
                                     </div>
                                     <div class="forecast-item">
                                         <span class="forecast-name">30-Day Usage:</span>
                                         <span class="forecast-value">${
                                           ingredient["30-Day Usage"]
-                                        } ${ingredient.Unit || "units"}</span>
+                                        } ${ingredient.Unit || ingredientUnits[ingredient.Ingredient?.toLowerCase()] || "units"}</span>
                                     </div>
                                 </div>
                             `
@@ -1247,10 +1310,6 @@
         showAlert("Stock data refreshed", "success");
       }
 
-      // View item history (placeholder)
-      function viewHistory(itemId) {
-        showAlert("History feature coming soon!", "info");
-      }
 
       // Close modal when clicking outside
       document

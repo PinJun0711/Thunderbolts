@@ -3,7 +3,7 @@
 
 const CONFIG = {
   // Set to true to use Lambda endpoints, false for local server
-  USE_LAMBDA: true,
+  USE_LAMBDA: false,
   
   // Lambda API Gateway URL (replace with your actual deployed URL)
   LAMBDA_BASE_URL: 'https://7mx6s4t0m9.execute-api.ap-southeast-5.amazonaws.com/default',
@@ -32,7 +32,7 @@ const CONFIG = {
     STOCK: '/api/stock',
     ORDERS: '/api/orders',
     ACTIVE_TABLES: '/api/active-tables',
-    COOKING_SEQUENCE: '/OrderHandling', // Your Lambda endpoint
+    COOKING_SEQUENCE: '/api/cooking-sequence', // MongoDB endpoint
     FORECAST: '/api/forecast',
     RESTOCK: '/api/stock/restock'
   },

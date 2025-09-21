@@ -22,9 +22,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Mongoose schemas and models
 const StockItemSchema = new mongoose.Schema(
   {
@@ -107,11 +104,21 @@ const ForecastSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Forecast = mongoose.model('Prediction', ForecastSchema);
+const Forecast = mongoose.model('Prediction', ForecastSchema, 'predictions');
 
 // Routes
+
+// Serve HTML pages explicitly (BEFORE MongoDB connection)
 app.get('/', (req, res) => {
-  res.send("Hello from Thunderbolts on EC2!");
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/stock', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'stock-dashboard.html'));
+});
+
+app.get('/cooking', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cooking-dashboard.html'));
 });
 
 app.get('/api/health', (req, res) => {
@@ -121,10 +128,51 @@ app.get('/api/health', (req, res) => {
 // Menu endpoint
 app.get('/api/menu', async (req, res) => {
   try {
+    console.log('🔍 Fetching menu items...');
     const items = await MenuItem.find().sort({ category: 1, name: 1 });
-    res.json(items);
+    console.log(`📋 Found ${items.length} menu items`);
+    
+    console.log('🔍 Fetching stock items...');
+    const stockItems = await StockItem.find({});
+    console.log(`📦 Found ${stockItems.length} stock items`);
+    
+    const stockMap = new Map(stockItems.map(s => [s.name.toLowerCase(), s]));
+    
+    // Debug: Log stock items and menu items for comparison
+    console.log('Stock items:', stockItems.map(s => s.name));
+    console.log('Menu items with stockNeeds:', items.map(m => ({ 
+      name: m.name, 
+      stockNeeds: m.stockNeeds?.map(n => n.name) 
+    })));
+    
+    // Check availability for each menu item
+    const itemsWithAvailability = items.map(item => {
+      let isAvailable = true;
+      let unavailableIngredients = [];
+      
+      if (item.stockNeeds && item.stockNeeds.length > 0) {
+        for (const need of item.stockNeeds) {
+          const stockItem = stockMap.get(need.name.toLowerCase());
+          console.log(`Checking ingredient: "${need.name}" -> looking for: "${need.name.toLowerCase()}" -> found:`, stockItem ? `${stockItem.name} (${stockItem.quantityAvailable})` : 'NOT FOUND');
+          if (!stockItem || stockItem.quantityAvailable < need.quantity) {
+            isAvailable = false;
+            unavailableIngredients.push(need.name);
+            console.log(`❌ ${item.name} unavailable due to: ${need.name}`);
+          }
+        }
+      }
+      
+      return {
+        ...item.toObject(),
+        isAvailable,
+        unavailableIngredients: isAvailable ? [] : unavailableIngredients
+      };
+    });
+    
+    console.log(`✅ Returning ${itemsWithAvailability.length} menu items with availability`);
+    res.json(itemsWithAvailability);
   } catch (err) {
-    console.error('Get menu error:', err);
+    console.error('❌ Get menu error:', err);
     res.status(500).json({ error: 'Failed to fetch menu' });
   }
 });
@@ -159,12 +207,90 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ error: 'table must be an integer 1-10' });
     }
 
-    // Allow multiple active orders per table per new requirement
-
+    // Get menu items and stock items
     const ids = [...new Set(items.map((i) => i.foodId))];
     const menuItems = await MenuItem.find({ foodId: { $in: ids } });
     const idToMenu = new Map(menuItems.map((m) => [m.foodId, m]));
 
+    // Get all stock items
+    const stockItems = await StockItem.find({});
+    const stockMap = new Map(stockItems.map(s => [s.name.toLowerCase(), s]));
+
+    // Debug: Log stock items for order creation
+    console.log('Order creation - Stock items:', stockItems.map(s => s.name));
+
+    // Check stock availability and prepare stock deduction
+    const stockDeductions = new Map();
+    const unavailableItems = [];
+
+    for (const item of items) {
+      const menuItem = idToMenu.get(item.foodId);
+      if (!menuItem || !menuItem.stockNeeds) continue;
+
+      // Check if we have enough stock for this item
+      let canFulfill = true;
+      const requiredStock = new Map();
+
+      for (const need of menuItem.stockNeeds) {
+        const stockItem = stockMap.get(need.name.toLowerCase());
+        if (!stockItem) {
+          console.warn(`Stock item not found: ${need.name}`);
+          canFulfill = false;
+          break;
+        }
+
+        const totalNeeded = need.quantity * item.quantity;
+        const currentStock = stockItem.quantityAvailable;
+        
+        if (currentStock < totalNeeded) {
+          canFulfill = false;
+          break;
+        }
+
+        requiredStock.set(stockItem._id, {
+          name: need.name,
+          needed: totalNeeded,
+          current: currentStock
+        });
+      }
+
+      if (!canFulfill) {
+        unavailableItems.push({
+          foodId: item.foodId,
+          foodName: menuItem.name,
+          quantity: item.quantity
+        });
+      } else {
+        // Add to stock deductions
+        for (const [stockId, stockInfo] of requiredStock) {
+          if (stockDeductions.has(stockId)) {
+            stockDeductions.get(stockId).needed += stockInfo.needed;
+          } else {
+            stockDeductions.set(stockId, stockInfo);
+          }
+        }
+      }
+    }
+
+    // If any items are unavailable, return error with details
+    if (unavailableItems.length > 0) {
+      return res.status(400).json({ 
+        error: 'Insufficient stock for some items',
+        unavailableItems: unavailableItems,
+        message: 'Some items are sold out or have insufficient ingredients'
+      });
+    }
+
+    // Deduct stock
+    for (const [stockId, stockInfo] of stockDeductions) {
+      await StockItem.findByIdAndUpdate(
+        stockId,
+        { $inc: { quantityAvailable: -stockInfo.needed } }
+      );
+      console.log(`Deducted ${stockInfo.needed} ${stockInfo.name} from stock`);
+    }
+
+    // Create order
     const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
     const enriched = items.map((i) => {
       const menu = idToMenu.get(i.foodId);
@@ -182,7 +308,11 @@ app.post('/api/orders', async (req, res) => {
     const totalAmountRounded = round2(totalAmount);
 
     const order = await Order.create({ pax, table: tableStr, items: enriched, totalAmount: totalAmountRounded, status: 'sent' });
-    res.status(201).json(order);
+    
+    res.status(201).json({
+      ...order.toObject(),
+      stockDeductions: Array.from(stockDeductions.values())
+    });
   } catch (err) {
     console.error('Create order error:', err);
     res.status(500).json({ error: 'Failed to create order' });
@@ -276,7 +406,18 @@ app.post('/api/stock/restock', async (req, res) => {
 // Get latest forecast data
 app.get('/api/forecast/latest', async (req, res) => {
   try {
+    console.log('Fetching latest forecast data from predictions collection...');
     const latestForecast = await Forecast.findOne().sort({ timestamp: -1 });
+    
+    console.log('Found forecast data:', latestForecast ? 'Yes' : 'No');
+    if (latestForecast) {
+      console.log('Forecast structure:', {
+        hasDishes: !!latestForecast.dishes,
+        hasStock: !!latestForecast.stock,
+        hasDaily: !!latestForecast.daily,
+        timestamp: latestForecast.timestamp
+      });
+    }
     
     if (!latestForecast) {
       return res.status(404).json({ error: 'No forecast data available' });
@@ -362,64 +503,61 @@ app.get('/api/cooking-sequence', async (req, res) => {
       .sort({ createdAt: 1 }) // Oldest orders first
       .lean();
 
-    // Extract all pending items from active orders
-    const pendingItems = [];
+    // Extract items and separate by status
+    const queueItems = [];
+    const preparingItems = [];
+    
     activeOrders.forEach(order => {
       order.items.forEach(item => {
+        // Add cooking time estimates based on food type
+        let cookingTime = 15;
+        let preparationTime = 5;
+        let priority = 'medium';
+        
+        const name = item.foodName.toLowerCase();
+        if (name.includes('roti') || name.includes('canai')) {
+          cookingTime = 8;
+          preparationTime = 3;
+          priority = 'high';
+        } else if (name.includes('nasi') || name.includes('lemak')) {
+          cookingTime = 12;
+          preparationTime = 5;
+          priority = 'high';
+        } else if (name.includes('goreng')) {
+          cookingTime = 10;
+          preparationTime = 4;
+          priority = 'medium';
+        } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
+          cookingTime = 3;
+          preparationTime = 2;
+          priority = 'low';
+        }
+        
+        const processedItem = {
+          ...item,
+          orderId: order._id,
+          table: order.table,
+          pax: order.pax,
+          orderCreatedAt: order.createdAt,
+          cookingTime,
+          preparationTime,
+          priority,
+          totalTime: preparationTime + cookingTime
+        };
+        
         if (item.status === 'pending' || item.status === 'sent') {
-          // Add cooking time estimates based on food type
-          let cookingTime = 15;
-          let preparationTime = 5;
-          let priority = 'medium';
-          
-          const name = item.foodName.toLowerCase();
-          if (name.includes('roti') || name.includes('canai')) {
-            cookingTime = 8;
-            preparationTime = 3;
-            priority = 'high';
-          } else if (name.includes('nasi') || name.includes('lemak')) {
-            cookingTime = 12;
-            preparationTime = 5;
-            priority = 'high';
-          } else if (name.includes('goreng')) {
-            cookingTime = 10;
-            preparationTime = 4;
-            priority = 'medium';
-          } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
-            cookingTime = 3;
-            preparationTime = 2;
-            priority = 'low';
-          }
-          
-          pendingItems.push({
-            ...item,
-            orderId: order._id,
-            table: order.table,
-            pax: order.pax,
-            orderCreatedAt: order.createdAt,
-            cookingTime,
-            preparationTime,
-            priority,
-            totalTime: preparationTime + cookingTime
-          });
+          queueItems.push(processedItem);
+        } else if (item.status === 'preparing') {
+          preparingItems.push(processedItem);
         }
       });
     });
 
-    // Optimize cooking sequence using multiple algorithms
-    const optimizedSequence = optimizeCookingSequence(pendingItems);
-
-    // Group by cooking stations (simulate different cooking areas)
-    const cookingStations = groupByCookingStations(optimizedSequence);
-
-    // Calculate estimated completion times
-    const estimatedTimes = calculateCompletionTimes(cookingStations);
-
+    // Return items in the new format
     res.json({
-      cookingSequence: optimizedSequence,
-      cookingStations,
-      estimatedTimes,
-      totalItems: pendingItems.length,
+      queue: queueItems,
+      preparing: preparingItems,
+      totalItems: queueItems.length + preparingItems.length,
       totalOrders: activeOrders.length,
       generatedAt: new Date().toISOString()
     });
@@ -443,11 +581,20 @@ app.post('/api/cooking-sequence', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Update the specific item status
-    const item = order.items.find(item => item.foodId === itemId);
-    if (item) {
-      item.status = status;
-      
+    // Update ALL items with matching foodId and spices
+    const { spices, foodName } = req.body;
+    let updatedCount = 0;
+    
+    order.items.forEach(item => {
+      if (item.foodId === itemId && 
+          (!spices || item.spices === spices) && 
+          (!foodName || item.foodName === foodName)) {
+        item.status = status;
+        updatedCount++;
+      }
+    });
+    
+    if (updatedCount > 0) {
       // If all items are completed, mark the order as completed
       const allCompleted = order.items.every(item => item.status === 'completed');
       if (allCompleted) {
@@ -460,7 +607,8 @@ app.post('/api/cooking-sequence', async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: `Item status updated to ${status}`,
+      message: `Updated ${updatedCount} items to ${status}`,
+      updatedCount: updatedCount,
       order: order
     });
   } catch (err) {
@@ -583,6 +731,10 @@ mongoose
     // Seed menu if empty
     seedMenuIfEmpty().catch((e) => console.error('Seed menu error:', e));
     seedStockIfEmpty().catch((e) => console.error('Seed stock error:', e));
+    
+    // Static files (must be after API routes and root route)
+    app.use(express.static(path.join(__dirname, 'public')));
+    
     app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cooking Efficiency Dashboard - Thunderbolts Restaurant</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -26,6 +25,7 @@
             margin: 0 auto;
         }
 
+        /* Header Styles */
         .header {
             display: flex;
             justify-content: space-between;
@@ -41,7 +41,7 @@
         .header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -67,24 +67,17 @@
             font-size: 14px;
         }
 
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
         }
 
         .btn-warning {
@@ -93,7 +86,6 @@
         }
 
         .btn-warning:hover {
-            transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
         }
 
@@ -101,16 +93,6 @@
             background: rgba(71, 85, 105, 0.5);
             color: #e2e8f0;
             border: 1px solid rgba(71, 85, 105, 0.3);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
         }
 
         .navigation {
@@ -131,11 +113,12 @@
 
         .nav-link:hover,
         .nav-link.active {
-            background: rgba(245, 158, 11, 0.2);
-            border-color: rgba(245, 158, 11, 0.3);
-            color: #f59e0b;
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
         }
 
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -149,12 +132,19 @@
             padding: 20px;
             text-align: center;
             border: 1px solid rgba(71, 85, 105, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 8px;
+            color: #f59e0b;
         }
 
         .stat-label {
@@ -162,192 +152,345 @@
             font-size: 0.875rem;
         }
 
-        .cooking-stations {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .station-card {
+        /* Optimization Section */
+        .optimization-section {
             background: rgba(30, 41, 59, 0.5);
             border-radius: 16px;
             padding: 24px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(71, 85, 105, 0.3);
         }
 
-        .station-header {
+        .optimization-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .optimization-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .optimization-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(71, 85, 105, 0.2);
+        }
+
+        .optimization-item .icon {
+            font-size: 1.2rem;
+        }
+
+        .optimization-item .text {
+            font-weight: 500;
+        }
+
+        /* Cooking Sequence Section */
+        .cooking-sequence-section {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .station-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #f1f5f9;
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .station-count {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            padding: 4px 12px;
+        .sequence-stats {
+            background: #ff6b35;
+            padding: 10px 20px;
             border-radius: 20px;
-            font-size: 0.875rem;
+            font-size: 14px;
             font-weight: 600;
+            color: white;
+        }
+
+        .cooking-section {
+            margin-bottom: 30px;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: #3d3d3d;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+
+        .preparing .section-subtitle {
+            border-left-color: #ffa500;
+            color: #ffa500;
+        }
+
+        .queue .section-subtitle {
+            border-left-color: #4a90e2;
+            color: #4a90e2;
+        }
+
+        .cooked .section-subtitle {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+
+        .cooking-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
         }
 
         .cooking-item {
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(30, 41, 59, 0.5);
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid rgba(71, 85, 105, 0.2);
+            padding: 20px;
+            border: 1px solid rgba(71, 85, 105, 0.3);
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .cooking-item:hover {
-            border-color: rgba(245, 158, 11, 0.3);
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+
+        .preparing-item {
+            border-left: 4px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .queue-item {
+            border-left: 4px solid #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .cooked-item {
+            border-left: 4px solid #10b981;
+            background: rgba(16, 185, 129, 0.05);
         }
 
         .item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .item-name {
-            font-weight: 600;
+        .item-number {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .item-dish {
+            font-size: 1.3rem;
+            font-weight: 700;
             color: #f1f5f9;
+            flex: 1;
+            margin: 0 15px;
         }
 
         .item-quantity {
-            background: rgba(71, 85, 105, 0.3);
-            color: #e2e8f0;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .item-spices {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
             padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.875rem;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+        }
+
+        .special-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 8px;
+            text-transform: uppercase;
         }
 
         .item-details {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
-            font-size: 0.875rem;
-            color: #94a3b8;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
-        .item-detail {
-            display: flex;
-            justify-content: space-between;
+        .detail-item {
+            background: rgba(30, 41, 59, 0.3);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(71, 85, 105, 0.2);
+        }
+
+        .detail-item .label {
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .detail-item .value {
+            color: #f1f5f9;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .priority-high {
+            color: #ff4757;
+        }
+
+        .priority-medium {
+            color: #ffa500;
+        }
+
+        .priority-low {
+            color: #2ed573;
         }
 
         .item-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 8px;
+        .btn-start {
+            background: #4a90e2;
+            color: white;
         }
 
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
+        .btn-ready {
+            background: #ffa500;
+            color: white;
         }
 
-        .status-pending {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+        .btn-cooking {
+            background: #ff6b35;
+            color: white;
         }
 
-        .status-preparing {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+        .btn-complete {
+            background: #28a745;
+            color: white;
         }
 
-        .status-ready {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+        .btn-serve {
+            background: #6c757d;
+            color: white;
         }
 
-        .priority-high {
-            border-left: 4px solid #ef4444;
-        }
-
-        .priority-medium {
-            border-left: 4px solid #f59e0b;
-        }
-
-        .priority-low {
-            border-left: 4px solid #10b981;
-        }
-
-        .timeline {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 12px;
-        }
-
-        .timeline-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #f1f5f9;
-        }
-
-        .timeline-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(71, 85, 105, 0.2);
-        }
-
-        .timeline-item:last-child {
-            border-bottom: none;
-        }
-
-        .timeline-time {
-            font-size: 0.875rem;
+        .no-items {
+            text-align: center;
             color: #94a3b8;
-            min-width: 80px;
+            padding: 40px 20px;
+            font-style: italic;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 10px;
+            border: 2px dashed rgba(71, 85, 105, 0.3);
         }
 
-        .timeline-content {
-            flex: 1;
-            font-size: 0.875rem;
-            color: #e2e8f0;
+        /* Alert Styles */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
         }
 
+        .alert-success {
+            background: #28a745;
+        }
+
+        .alert-danger {
+            background: #dc3545;
+        }
+
+        .alert-info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading Animation */
         .loading {
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 200px;
-            color: #94a3b8;
+            justify-content: center;
+            padding: 40px;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(71, 85, 105, 0.3);
-            border-top: 4px solid #f59e0b;
+            border: 4px solid #444;
+            border-left: 4px solid #ff6b35;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -357,96 +500,22 @@
             100% { transform: rotate(360deg); }
         }
 
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid;
-        }
-
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: rgba(245, 158, 11, 0.3);
-            color: #f59e0b;
-        }
-
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #10b981;
-        }
-
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #ef4444;
-        }
-
-        .optimization-info {
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(71, 85, 105, 0.3);
-        }
-
-        .optimization-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #f1f5f9;
-        }
-
-        .optimization-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .optimization-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .optimization-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .optimization-text {
-            flex: 1;
-        }
-
-        .optimization-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            margin-bottom: 4px;
-        }
-
-        .optimization-value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #f1f5f9;
-        }
-
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .cooking-stations {
+            .cooking-items {
                 grid-template-columns: 1fr;
             }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
-            .header {
+
+            .item-details {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
                 flex-direction: column;
-                gap: 20px;
                 text-align: center;
             }
         }
@@ -456,9 +525,9 @@
     <div class="container">
         <!-- Navigation -->
         <nav class="navigation">
-            <a href="index.html" class="nav-link">POS System</a>
-            <a href="stock-dashboard.html" class="nav-link">Stock Dashboard</a>
-            <a href="cooking-dashboard.html" class="nav-link active">Cooking Efficiency</a>
+            <a href="/" class="nav-link">POS System</a>
+            <a href="/stock" class="nav-link">Stock Dashboard</a>
+            <a href="/cooking" class="nav-link active">Cooking Efficiency</a>
         </nav>
 
         <!-- Header -->
@@ -534,331 +603,689 @@
         <!-- Alerts Section -->
         <div id="alertsContainer"></div>
 
-        <!-- Cooking Stations -->
-        <div class="cooking-stations" id="cookingStations">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p style="margin-left: 15px;">Loading cooking sequence...</p>
+        <!-- Cooking Sequence Section -->
+        <div class="cooking-sequence-section">
+            <div class="section-header">
+                <h3>🍳 Cooking Sequence</h3>
+                <div class="sequence-stats">
+                    <span id="queueCount">0</span> queued • 
+                    <span id="preparingCount">0</span> preparing • 
+                    <span id="servedCount">0</span> served
+                </div>
+            </div>
+            
+            <!-- Queue Section -->
+            <div class="cooking-section queue">
+                <h4 class="section-subtitle">⏳ Queue</h4>
+                <div id="cooking-queue" class="cooking-items">
+                    <!-- Queue items will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Preparing Section -->
+            <div class="cooking-section preparing">
+                <h4 class="section-subtitle">🍳 Preparing</h4>
+                <div id="preparing" class="cooking-items">
+                    <!-- Preparing items will be inserted here -->
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Configuration for API endpoints
+        const CONFIG = {
+          // Set to true to use Lambda endpoints, false for local server
+          USE_LAMBDA: false,
+          
+          // Lambda API Gateway URL (replace with your actual deployed URL)
+          LAMBDA_BASE_URL: 'https://7mx6s4t0m9.execute-api.ap-southeast-5.amazonaws.com/default',
+          
+          // Auto-detect base URL based on current location
+          getBaseUrl() {
+            if (this.USE_LAMBDA) {
+              return this.LAMBDA_BASE_URL;
+            }
+            
+            // If running on same server (EC2), use relative URLs
+            // If running locally, use localhost
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            if (isLocalhost) {
+              return 'http://localhost:3000';
+            } else {
+              // On EC2 or any other server, use relative URLs (same origin)
+              return '';
+            }
+          },
+          
+          // API endpoint paths
+          ENDPOINTS: {
+            MENU: '/api/menu',
+            STOCK: '/api/stock',
+            ORDERS: '/api/orders',
+            ACTIVE_TABLES: '/api/active-tables',
+            COOKING_SEQUENCE: '/api/cooking-sequence', // MongoDB endpoint
+            FORECAST: '/api/forecast',
+            RESTOCK: '/api/stock/restock'
+          },
+          
+          // Get full URL for an endpoint
+          getUrl(endpoint) {
+            return this.getBaseUrl() + endpoint;
+          }
+        };
+        
+        // Export for use in other scripts
+        window.CONFIG = CONFIG;
+    </script>
+    <script>
         let cookingData = null;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('CONFIG loaded:', typeof CONFIG !== 'undefined');
             loadCookingSequence();
             
             // Auto-refresh every 30 seconds
             setInterval(loadCookingSequence, 30000);
         });
 
+
         // Load cooking sequence from Lambda API
         async function loadCookingSequence() {
             try {
                 const url = CONFIG.getUrl(CONFIG.ENDPOINTS.COOKING_SEQUENCE);
+                console.log('🔍 Fetching from URL:', url);
+                
                 const response = await fetch(url);
-                if (!response.ok) throw new Error('Failed to fetch cooking sequence');
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const lambdaData = await response.json();
+                console.log('📦 Lambda data received:', lambdaData);
                 
-                // Transform Lambda data to our expected format
-                cookingData = transformLambdaData(lambdaData);
+                // Check if we have valid data
+                if (!lambdaData || (typeof lambdaData !== 'object')) {
+                    throw new Error('Invalid data received from API');
+                }
                 
-                renderCookingStations();
+                // Transform MongoDB data to cooking sequence format
+                cookingData = transformMongoData(lambdaData);
+                console.log('🔄 Transformed data:', cookingData);
+                
+                // Check if transformation was successful
+                if (!cookingData) {
+                    throw new Error('Failed to transform data');
+                }
+                
+                displayCookingSequence(cookingData);
                 updateStats();
                 updateOptimizationInfo();
             } catch (error) {
-                console.error('Error loading cooking sequence:', error);
+                console.error('❌ Error loading cooking sequence:', error);
                 showAlert('Error loading cooking sequence: ' + error.message, 'danger');
                 renderErrorState();
             }
         }
 
-        // Transform Lambda data format to our cooking stations format
-        function transformLambdaData(lambdaData) {
-            if (!lambdaData.cookingQueue || !Array.isArray(lambdaData.cookingQueue)) {
-                return { cookingStations: {} };
-            }
-
-            const cookingStations = {
-                'Hot Kitchen': [],
-                'Cold Prep': [],
-                'Grill Station': [],
-                'Fry Station': []
-            };
-
-            let totalItems = 0;
-            let totalOrders = new Set();
-
-            lambdaData.cookingQueue.forEach(dishGroup => {
-                const dishName = dishGroup.dish;
-                const batches = dishGroup.batch || [];
-
-                batches.forEach(batch => {
-                    totalItems += batch.quantity || 1;
-                    totalOrders.add(batch.orderId);
-
-                    // Determine cooking station based on dish name
-                    const stationName = getCookingStation(dishName);
+        // Group items by dish and spices to match API merging behavior
+        function groupItemsByDishAndSpices(items) {
+            const grouped = {};
+            
+            items.forEach(item => {
+                const key = `${item.dish}_${item.spices}`;
+                
+                if (grouped[key]) {
+                    // Merge with existing item
+                    grouped[key].totalQuantity += (item.totalQuantity || item.quantity || 1);
+                    grouped[key].orderIds = [...new Set([...grouped[key].orderIds, ...(item.orderIds || [])])];
+                    grouped[key].tables = [...new Set([...grouped[key].tables.split(', '), ...(item.tables || 'Unknown').split(', ')].filter(t => t && t !== 'Unknown'))].join(', ');
                     
-                    // Add cooking time estimates
-                    const cookingTime = getCookingTime(dishName);
-                    const preparationTime = getPreparationTime(dishName);
-                    const priority = getPriority(dishName);
-
-                    const cookingItem = {
-                        orderId: batch.orderId,
-                        foodId: dishName.toLowerCase().replace(/\s+/g, '_'),
-                        foodName: dishName,
-                        quantity: batch.quantity || 1,
-                        table: batch.table,
-                        pax: 1, // Default pax since not provided in Lambda data
-                        status: 'pending', // Default status
-                        cookingTime: cookingTime,
-                        preparationTime: preparationTime,
-                        priority: priority,
-                        totalTime: preparationTime + cookingTime,
-                        orderCreatedAt: new Date(batch.createdAt),
-                        requirement: '',
-                        spices: ''
-                    };
-
-                    cookingStations[stationName].push(cookingItem);
-                });
-            });
-
-            // Sort items within each station by priority and creation time
-            Object.keys(cookingStations).forEach(stationName => {
-                cookingStations[stationName].sort((a, b) => {
-                    const priorityOrder = { high: 3, medium: 2, low: 1 };
-                    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-                        return priorityOrder[b.priority] - priorityOrder[a.priority];
+                    // Update special status if any item is special
+                    if (item.special) {
+                        grouped[key].special = true;
                     }
-                    return new Date(a.orderCreatedAt) - new Date(b.orderCreatedAt);
-                });
+                } else {
+                    // Create new grouped item
+                    grouped[key] = {
+                        ...item,
+                        totalQuantity: item.totalQuantity || item.quantity || 1,
+                        orderIds: item.orderIds || [],
+                        tables: item.tables || 'Unknown'
+                    };
+                }
             });
-
-            return {
-                cookingStations,
-                totalItems,
-                totalOrders: totalOrders.size,
-                generatedAt: new Date().toISOString()
-            };
+            
+            return Object.values(grouped);
         }
 
-        // Determine cooking station based on dish name
-        function getCookingStation(dishName) {
-            const name = dishName.toLowerCase();
+        // Transform MongoDB data to cooking sequence format
+        function transformMongoData(mongoData) {
+            console.log('MongoDB data received:', mongoData);
             
-            if (name.includes('drink') || name.includes('teh') || name.includes('milo') || 
-                name.includes('sirap') || name.includes('bandung')) {
-                return 'Cold Prep';
-            } else if (name.includes('roti') || name.includes('canai') || 
-                       name.includes('telur') || name.includes('grill')) {
-                return 'Grill Station';
-            } else if (name.includes('goreng') || name.includes('fried')) {
-                return 'Fry Station';
-            } else {
-                return 'Hot Kitchen';
+            if (!mongoData) {
+                console.log('No data received');
+                return { queue: [], preparing: [], cooked: [] };
             }
-        }
 
-        // Get cooking time based on dish type
-        function getCookingTime(dishName) {
-            const name = dishName.toLowerCase();
-            
-            if (name.includes('roti') || name.includes('canai')) {
-                return 8;
-            } else if (name.includes('nasi') || name.includes('lemak')) {
-                return 12;
-            } else if (name.includes('goreng')) {
-                return 10;
-            } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
-                return 3;
-            } else {
-                return 15;
+            // Remove cookingNow completely from API data
+            if (mongoData.cookingNow) {
+                delete mongoData.cookingNow;
+                console.log('Removed cookingNow from API data');
             }
-        }
 
-        // Get preparation time based on dish type
-        function getPreparationTime(dishName) {
-            const name = dishName.toLowerCase();
-            
-            if (name.includes('roti') || name.includes('canai')) {
-                return 3;
-            } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
-                return 2;
-            } else {
-                return 5;
+            // Check if data is in the new format (queue + preparing)
+            if (mongoData.queue !== undefined) {
+                console.log('Data is in new format (queue + preparing)');
+                console.log('Raw queue:', mongoData.queue);
+                console.log('Raw preparing:', mongoData.preparing);
+                
+                // Process queue section - preserve the EXACT order from API, NO SORTING
+                const queue = [...(mongoData.queue || [])]; // Create a copy to avoid mutation
+                console.log('Queue items in API order:', queue.map((item, index) => `${index + 1}. ${item.dish} (${item.spices})`));
+
+                // Process preparing section
+                const preparing = [...(mongoData.preparing || [])];
+                console.log('Preparing items in API order:', preparing.map((item, index) => `${index + 1}. ${item.dish} (${item.spices})`));
+
+                // Add priority and timing info to each item
+                const processItem = (item) => {
+                    try {
+                        console.log('Processing item:', item);
+                        // Handle both old format (dish) and new format (foodName)
+                        const dishName = item.dish || item.foodName || 'Unknown Dish';
+                        const orderIds = item.orders ? item.orders.map(order => order.orderId) : [item.orderId].filter(Boolean);
+                        const spices = item.spices || 'Normal';
+                        const tables = item.orders ? item.orders.map(order => order.table).join(', ') : (item.table || 'Unknown');
+                        
+                        // Create unique identifier for this specific batch
+                        const uniqueId = `${dishName}_${spices}_${orderIds.sort().join('_')}`;
+                        
+                        return {
+                            ...item,
+                            dish: dishName, // Ensure dish property exists
+                            totalQuantity: item.totalQuantity || item.quantity || 1, // Handle both formats
+                            priority: getPriority(dishName),
+                            prepTime: getPrepTime(dishName),
+                            cookTime: getCookTime(dishName),
+                            totalTime: getPrepTime(dishName) + getCookTime(dishName),
+                            tables: tables,
+                            orderIds: orderIds,
+                            spices: spices,
+                            foodId: item.foodId || getFoodId(dishName),
+                            uniqueId: uniqueId // Add unique identifier for this batch
+                        };
+                    } catch (error) {
+                        console.error('Error processing item:', item, error);
+                        const dishName = item.dish || item.foodName || 'Unknown Dish';
+                        return {
+                            ...item,
+                            dish: dishName,
+                            totalQuantity: item.totalQuantity || item.quantity || 1,
+                            priority: 'medium',
+                            prepTime: 3,
+                            cookTime: 4,
+                            totalTime: 7,
+                            tables: 'Unknown',
+                            orderIds: [],
+                            spices: 'Normal',
+                            foodId: 'unknown',
+                            uniqueId: 'unknown'
+                        };
+                    }
+                };
+
+                const processedQueue = queue.map(processItem);
+                const processedPreparing = preparing.map(processItem);
+
+                // Group items by dish + spices + status to match API merging
+                const groupedQueue = groupItemsByDishAndSpices(processedQueue);
+                const groupedPreparing = groupItemsByDishAndSpices(processedPreparing);
+
+                console.log(`Processed: ${groupedQueue.length} in queue, ${groupedPreparing.length} preparing`);
+                console.log('Processed queue order (should match API):', processedQueue.map((item, index) => `${index + 1}. ${item.dish} (${item.spices})`));
+                console.log('Processed preparing order:', processedPreparing.map((item, index) => `${index + 1}. ${item.dish} (${item.spices})`));
+                
+                return {
+                    queue: groupedQueue,
+                    preparing: groupedPreparing,
+                    cooked: []
+                };
             }
-        }
-
-        // Get priority based on dish type
-        function getPriority(dishName) {
-            const name = dishName.toLowerCase();
             
-            if (name.includes('roti') || name.includes('canai') || name.includes('nasi')) {
-                return 'high';
-            } else if (name.includes('goreng')) {
-                return 'medium';
-            } else {
-                return 'low';
+            // Handle old format (cookingSequence array)
+            if (mongoData.cookingSequence && Array.isArray(mongoData.cookingSequence)) {
+                console.log('Data is in old format (cookingSequence array)');
+                
+                // Group items by dish AND spices to create batches
+                const dishSpiceBatches = new Map();
+                
+                mongoData.cookingSequence.forEach(item => {
+                    const dishName = item.foodName;
+                    const spices = item.spices || 'Normal';
+                    const key = `${dishName}_${spices}`;
+                    
+                    if (!dishSpiceBatches.has(key)) {
+                        dishSpiceBatches.set(key, {
+                            dish: dishName,
+                            spices: spices,
+                            totalQuantity: 0,
+                            tables: new Set(),
+                            priority: item.priority,
+                            prepTime: item.preparationTime || getPrepTime(dishName),
+                            cookTime: item.cookingTime || getCookTime(dishName),
+                            items: [],
+                            orders: []
+                        });
+                    }
+                    
+                    const batch = dishSpiceBatches.get(key);
+                    batch.totalQuantity += item.quantity;
+                    batch.tables.add(item.table);
+                    batch.items.push(item);
+                    batch.orders.push({
+                        orderId: item.orderId || `temp-${Math.random()}`,
+                        table: item.table,
+                        qty: item.quantity
+                    });
+                });
+
+                // Convert to new format
+                const batches = Array.from(dishSpiceBatches.values()).map(batch => ({
+                    ...batch,
+                    tables: Array.from(batch.tables).sort((a, b) => parseInt(a) - parseInt(b)),
+                    tablesText: Array.from(batch.tables).sort((a, b) => parseInt(a) - parseInt(b)).join(', '),
+                    orderIds: batch.orders.map(order => order.orderId),
+                    totalTime: (batch.prepTime || 0) + (batch.cookTime || 0)
+                }));
+
+                // Sort by priority
+                batches.sort((a, b) => {
+                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    const aPriority = priorityOrder[a.priority] || 2;
+                    const bPriority = priorityOrder[b.priority] || 2;
+                    
+                    if (aPriority !== bPriority) {
+                        return bPriority - aPriority;
+                    }
+                    return b.totalQuantity - a.totalQuantity;
+                });
+
+                console.log(`Converted old format: ${batches.length} batches`);
+                
+                return {
+                    queue: batches,
+                    preparing: [],
+                    cooked: []
+                };
             }
+
+            console.log('Unknown data format, returning empty data');
+            return { queue: [], preparing: [], cooked: [] };
         }
 
-        // Render cooking stations
-        function renderCookingStations() {
-            const container = document.getElementById('cookingStations');
+
+        // Display cooking sequence with only Queue and Preparing sections
+        function displayCookingSequence(data) {
+            const queueContainer = document.getElementById('cooking-queue');
+            const preparingContainer = document.getElementById('preparing');
             
-            if (!cookingData || !cookingData.cookingStations) {
-                container.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-left: 15px;">No cooking data available</p></div>';
+            if (!queueContainer || !preparingContainer) return;
+
+            console.log('Displaying cooking sequence with data:', data);
+            
+            // Queue: ONLY from API, no cookingNow injected
+            const queueItems = Array.isArray(data.queue) ? data.queue : [];
+            displaySection(queueContainer, queueItems, 'QUEUE', 'queue-item');
+
+            // Preparing: as-is
+            const preparingItems = data.preparing || [];
+            displaySection(preparingContainer, preparingItems, 'PREPARING', 'preparing-item');
+            
+            // Auto-move first item to preparing if preparing is empty
+            setTimeout(async () => {
+                await autoMoveFirstItemToPreparing();
+            }, 100); // Small delay to ensure UI is rendered first
+        }
+
+        // Display a section with items
+        function displaySection(container, items, sectionTitle, itemClass) {
+            if (items.length === 0) {
+                container.innerHTML = `<div class="no-items">No items ${sectionTitle.toLowerCase()}</div>`;
                 return;
             }
 
-            const stationsHtml = Object.entries(cookingData.cookingStations).map(([stationName, stationData]) => {
-                const items = stationData.items || [];
-                
-                return `
-                    <div class="station-card">
-                        <div class="station-header">
-                            <div class="station-title">${stationName}</div>
-                            <div class="station-count">${items.length} items</div>
-                        </div>
-                        
-                        ${items.length === 0 ? 
-                            '<p style="text-align: center; color: #94a3b8; padding: 20px;">No items in this station</p>' :
-                            items.map(item => renderCookingItem(item)).join('')
-                        }
-                        
-                        ${stationData.estimatedStart ? `
-                            <div class="timeline">
-                                <div class="timeline-title">⏰ Timeline</div>
-                                <div class="timeline-item">
-                                    <div class="timeline-time">Start</div>
-                                    <div class="timeline-content">${formatTime(stationData.estimatedStart)}</div>
-                                </div>
-                                <div class="timeline-item">
-                                    <div class="timeline-time">Complete</div>
-                                    <div class="timeline-content">${formatTime(stationData.estimatedComplete)} (${Math.round(stationData.totalTime)} min)</div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
+            console.log(`Displaying ${sectionTitle} with ${items.length} items:`, items.map((item, index) => `${index + 1}. ${item.dish} (${item.spices})`));
 
-            container.innerHTML = stationsHtml;
-        }
-
-        // Render individual cooking item
-        function renderCookingItem(item) {
-            const priorityClass = `priority-${item.priority}`;
-            const statusClass = `status-${item.status}`;
-            
-            return `
-                <div class="cooking-item ${priorityClass}">
+            const html = items.map((item, index) => `
+                <div class="cooking-item ${itemClass}" data-dish="${item.dish}" data-spices="${item.spices}">
                     <div class="item-header">
-                        <div class="item-name">${item.foodName}</div>
-                        <div class="item-quantity">Qty: ${item.quantity}</div>
+                        <div class="item-number">${sectionTitle === 'QUEUE' ? '#' + (index + 1) : sectionTitle}</div>
+                        <div class="item-dish">
+                            ${item.dish}
+                            ${item.special ? '<span class="special-badge">SPECIAL</span>' : ''}
+                        </div>
+                        <div class="item-quantity">x${item.totalQuantity}</div>
+                        ${item.spices !== 'Normal' ? `<div class="item-spices">${item.spices}</div>` : ''}
                     </div>
-                    
                     <div class="item-details">
-                        <div class="item-detail">
-                            <span>Table:</span>
-                            <span>${item.table}</span>
+                        <div class="detail-item">
+                            <span class="label">Tables:</span>
+                            <span class="value">${item.tables}</span>
                         </div>
-                        <div class="item-detail">
-                            <span>Pax:</span>
-                            <span>${item.pax}</span>
+                        <div class="detail-item">
+                            <span class="label">Priority:</span>
+                            <span class="value priority-${item.priority || 'medium'}">${(item.priority || 'medium').toUpperCase()}</span>
                         </div>
-                        <div class="item-detail">
-                            <span>Prep Time:</span>
-                            <span>${item.preparationTime || 5} min</span>
+                        <div class="detail-item">
+                            <span class="label">Prep Time:</span>
+                            <span class="value">${item.prepTime || 0} min</span>
                         </div>
-                        <div class="item-detail">
-                            <span>Cook Time:</span>
-                            <span>${item.cookingTime || 15} min</span>
+                        <div class="detail-item">
+                            <span class="label">Cook Time:</span>
+                            <span class="value">${item.cookTime || 0} min</span>
                         </div>
-                    </div>
-                    
-                    <div class="item-details">
-                        <div class="item-detail">
-                            <span>Priority:</span>
-                            <span class="status-badge status-${item.priority}">${item.priority}</span>
-                        </div>
-                        <div class="item-detail">
-                            <span>Status:</span>
-                            <span class="status-badge ${statusClass}">${item.status}</span>
+                        <div class="detail-item">
+                            <span class="label">Total Time:</span>
+                            <span class="value">${item.totalTime || 0} min</span>
                         </div>
                     </div>
-                    
-                    ${item.requirement ? `
-                        <div style="margin: 8px 0; padding: 8px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; font-size: 0.875rem; color: #94a3b8;">
-                            <strong>Special:</strong> ${item.requirement}
-                        </div>
-                    ` : ''}
-                    
                     <div class="item-actions">
-                        ${item.status === 'pending' || item.status === 'sent' ? `
-                            <button class="btn btn-primary btn-sm" onclick="updateItemStatus('${item.orderId}', '${item.foodId}', 'preparing')">
-                                🔥 Start Cooking
-                            </button>
-                        ` : ''}
-                        
-                        ${item.status === 'preparing' ? `
-                            <button class="btn btn-success btn-sm" onclick="updateItemStatus('${item.orderId}', '${item.foodId}', 'ready')">
-                                ✅ Mark Ready
-                            </button>
-                        ` : ''}
-                        
-                        ${item.status === 'ready' ? `
-                            <button class="btn btn-warning btn-sm" onclick="updateItemStatus('${item.orderId}', '${item.foodId}', 'completed')">
-                                🎯 Complete
-                            </button>
-                        ` : ''}
-                        
-                        <button class="btn btn-secondary btn-sm" onclick="viewItemDetails('${item.orderId}', '${item.foodId}')">
-                            📋 Details
-                        </button>
+                        ${getActionButtons(item, sectionTitle)}
                     </div>
                 </div>
-            `;
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        // Get action buttons based on section
+        function getActionButtons(item, section) {
+            switch(section) {
+                case 'PREPARING':
+                    return `
+                        <button class="btn btn-serve" onclick="markServed('${item.dish}', '${item.spices}')">
+                            🍽️ Mark Served
+                        </button>
+                    `;
+                case 'QUEUE':
+                    // No button for queue - items auto-move to preparing
+                    return '';
+                default:
+                    return '';
+            }
+        }
+
+        // Auto-move first item from queue to preparing when preparing is empty
+        async function autoMoveFirstItemToPreparing() {
+            if (!cookingData) return;
+            
+            // Only auto-move if preparing is empty and queue has items
+            if ((cookingData.preparing?.length || 0) === 0 && (cookingData.queue?.length || 0) > 0) {
+                const firstItem = cookingData.queue[0];
+                console.log('Auto-moving first item to preparing:', firstItem.dish, firstItem.spices);
+                await moveItemToPreparing(firstItem);
+            }
+        }
+
+        // Move item to preparing (shared logic)
+        async function moveItemToPreparing(item) {
+            if (!cookingData) return;
+            
+            // Remove from queue
+            const itemIndex = cookingData.queue.findIndex(queueItem => 
+                queueItem.dish === item.dish && queueItem.spices === item.spices
+            );
+            
+            if (itemIndex === -1) {
+                console.log('Item not found in queue:', item.dish, item.spices);
+                return;
+            }
+            
+            const removedItem = cookingData.queue.splice(itemIndex, 1)[0];
+            
+            console.log('Moving item to preparing:', {
+                dish: removedItem.dish,
+                spices: removedItem.spices,
+                uniqueId: removedItem.uniqueId,
+                orderIds: removedItem.orderIds
+            });
+            
+            // Update database (with fallback)
+            try {
+                console.log('Attempting to update database for:', removedItem.dish, removedItem.spices, 'uniqueId:', removedItem.uniqueId);
+                await updateItemStatusInDB(removedItem, 'preparing');
+                console.log('✅ Database updated successfully for:', removedItem.dish);
+            } catch (error) {
+                console.error('❌ Database update failed for:', removedItem.dish, error);
+                showAlert(`Database update failed for ${removedItem.dish}: ${error.message}`, 'warning');
+                // Continue with local update even if database fails
+            }
+            
+            // Move to preparing section (always do this)
+            if (!cookingData.preparing) {
+                cookingData.preparing = [];
+            }
+            cookingData.preparing.push(removedItem);
+            
+            displayCookingSequence(cookingData);
+            updateStats();
+            showAlert(`${removedItem.dish} (${removedItem.spices}) moved to preparing`, 'success');
+        }
+
+        // Start preparing (move from queue to preparing and update database)
+        async function startPreparing(dish, spices) {
+            if (!cookingData) return;
+            
+            // Find the grouped item in queue
+            const item = cookingData.queue.find(queueItem => 
+                queueItem.dish === dish && queueItem.spices === spices
+            );
+            
+            if (!item) {
+                showAlert('Item not found in queue', 'danger');
+                return;
+            }
+            
+            await moveItemToPreparing(item);
+        }
+
+        // Mark served (move from preparing to completed and update database)
+        async function markServed(dish, spices) {
+            if (!cookingData) return;
+            
+            // Find item in preparing using uniqueId for better identification
+            const itemIndex = cookingData.preparing.findIndex(preparingItem => 
+                preparingItem.dish === dish && preparingItem.spices === spices
+            );
+            
+            if (itemIndex === -1) {
+                showAlert('Item not found in preparing', 'danger');
+                return;
+            }
+            
+            const item = cookingData.preparing.splice(itemIndex, 1)[0];
+            
+            console.log('Marking item as served:', {
+                dish: item.dish,
+                spices: item.spices,
+                uniqueId: item.uniqueId,
+                orderIds: item.orderIds
+            });
+            
+            try {
+                // Update database first - use 'completed' status
+                console.log('Attempting to update database for:', item.dish, item.spices, 'uniqueId:', item.uniqueId);
+                await updateItemStatusInDB(item, 'completed');
+                console.log('✅ Database updated successfully for:', item.dish);
+            } catch (error) {
+                console.error('❌ Database update failed for:', item.dish, error);
+                showAlert(`Database update failed for ${item.dish}: ${error.message}`, 'warning');
+            }
+            
+            // Add to cooked section for tracking
+            if (!cookingData.cooked) {
+                cookingData.cooked = [];
+            }
+            cookingData.cooked.push(item);
+            
+            // Update display
+            displayCookingSequence(cookingData);
+            updateStats();
+            showAlert(`${dish} (${spices}) marked as served`, 'success');
+            
+            // Auto-advance: move next item from queue to preparing
+            setTimeout(async () => {
+                await autoMoveFirstItemToPreparing();
+            }, 500); // Small delay to ensure UI updates first
+        }
+
+
+
+
+
+        // Update item status in database
+        async function updateItemStatusInDB(item, status) {
+            try {
+                const orderIds = item.orderIds || item.orders?.map(o => o.orderId) || [];
+                const foodId = item.foodId || getFoodId(item.dish);
+                const uniqueId = item.uniqueId;
+                
+                console.log('Updating food item status:', { 
+                    dish: item.dish, 
+                    spices: item.spices, 
+                    orderIds, 
+                    status,
+                    foodId,
+                    uniqueId,
+                    totalQuantity: item.totalQuantity
+                });
+                
+                // Update each order - the server will update ALL items with matching foodId and spices
+                const promises = orderIds.map(async (orderId) => {
+                    try {
+                        const response = await fetch(`${CONFIG.getUrl(CONFIG.ENDPOINTS.COOKING_SEQUENCE)}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                orderId: orderId,
+                                itemId: foodId,
+                                status: status,
+                                spices: item.spices, // Add spices to help identify the right items
+                                foodName: item.dish // Add food name for better identification
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log(`✅ Updated food item ${item.dish} (${item.spices}) in order ${orderId}:`, result);
+                            return result;
+                        } else {
+                            const errorText = await response.text();
+                            console.error(`❌ Failed to update food item in order ${orderId}:`, response.status, errorText);
+                            throw new Error(`HTTP ${response.status}: ${errorText}`);
+                        }
+                    } catch (e) {
+                        console.error(`❌ Error updating order ${orderId}:`, e.message);
+                        throw e;
+                    }
+                });
+                
+                const results = await Promise.all(promises);
+                console.log('✅ Successfully updated food item status:', results);
+                return results;
+            } catch (error) {
+                console.error('❌ Error updating food item status in database:', error);
+                throw error;
+            }
+        }
+
+
+        // Update order status in database
+        async function updateOrderStatus(orderIds, status) {
+            const promises = orderIds.map(async (orderId) => {
+                const response = await fetch('/api/orders/' + orderId + '/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to update order ${orderId}`);
+                }
+                
+                return response.json();
+            });
+            
+            await Promise.all(promises);
         }
 
         // Update statistics
         function updateStats() {
-            if (!cookingData) return;
+    if (!cookingData) return;
 
-            document.getElementById('totalItems').textContent = cookingData.totalItems || 0;
-            document.getElementById('totalOrders').textContent = cookingData.totalOrders || 0;
-            
-            // Calculate estimated total time
-            const totalTime = Object.values(cookingData.cookingStations || {})
-                .reduce((sum, station) => sum + (station.totalTime || 0), 0);
-            document.getElementById('estimatedTime').textContent = `${Math.round(totalTime)} min`;
-            
-            // Calculate efficiency score (mock calculation)
-            const efficiencyScore = Math.min(100, Math.max(0, 85 + Math.random() * 15));
-            document.getElementById('efficiencyScore').textContent = `${Math.round(efficiencyScore)}%`;
-        }
+    // Only use queue + preparing
+    const allItems = [
+        ...(cookingData.queue || []),
+        ...(cookingData.preparing || [])
+    ];
+
+    // Calculate totals
+    console.log('All items for stats:', allItems.map(item => ({ dish: item.dish, totalQuantity: item.totalQuantity, quantity: item.quantity })));
+    const totalItems = allItems.reduce((sum, item) => sum + (item.totalQuantity || item.quantity || 0), 0);
+    document.getElementById('totalItems').textContent = totalItems;
+
+    const allOrderIds = new Set();
+    allItems.forEach(item => (item.orderIds || []).forEach(id => allOrderIds.add(id)));
+    document.getElementById('totalOrders').textContent = allOrderIds.size;
+
+    const totalTime = allItems.reduce((sum, item) => sum + (item.totalTime || 0), 0);
+    document.getElementById('estimatedTime').textContent = `${Math.round(totalTime)} min`;
+
+    const efficiencyScore = Math.min(95, Math.max(70, 100 - (totalItems * 0.1)));
+    document.getElementById('efficiencyScore').textContent = `${Math.round(efficiencyScore)}%`;
+
+    const highPriorityItems = allItems.filter(item => item.priority === 'high').length;
+    document.getElementById('hotItems').textContent = `${highPriorityItems} items`;
+
+     // Section counts: queue, preparing, and served
+     document.getElementById('queueCount').textContent = cookingData.queue?.length || 0;
+     document.getElementById('preparingCount').textContent = cookingData.preparing?.length || 0;
+     document.getElementById('servedCount').textContent = cookingData.cooked?.length || 0;
+}
 
         // Update optimization info
         function updateOptimizationInfo() {
             if (!cookingData) return;
 
-            document.getElementById('lastUpdated').textContent = formatTime(new Date(cookingData.generatedAt));
+            // Get the most recent startedFrom time from all items - NO cookingNow
+            const allItems = [
+                ...(cookingData.preparing || []),
+                ...(cookingData.queue || []),
+                ...(cookingData.cooked || [])
+            ];
+            const mostRecentTime = allItems.length > 0 ? 
+                allItems.reduce((latest, item) => {
+                    const itemTime = new Date(item.startedFrom || new Date());
+                    return itemTime > latest ? itemTime : latest;
+                }, new Date(0)) : new Date();
+            
+            document.getElementById('lastUpdated').textContent = formatTime(mostRecentTime);
             
             // Count high priority items
-            const highPriorityItems = Object.values(cookingData.cookingStations || {})
-                .flatMap(station => station.items || [])
-                .filter(item => item.priority === 'high').length;
+            const highPriorityItems = allItems.filter(item => item.priority === 'high').length;
             document.getElementById('hotItems').textContent = `${highPriorityItems} items`;
         }
 
         // Update item status
-        async function updateItemStatus(orderId, itemId, status) {
+        async function updateItemStatus(itemId, dishName, status) {
             try {
                 const url = CONFIG.getUrl(CONFIG.ENDPOINTS.COOKING_SEQUENCE);
                 const response = await fetch(url, {
@@ -867,8 +1294,8 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        orderId,
                         itemId,
+                        dishName,
                         status
                     })
                 });
@@ -884,13 +1311,12 @@
         }
 
         // View item details
-        function viewItemDetails(orderId, itemId) {
-            const item = Object.values(cookingData.cookingStations || {})
-                .flatMap(station => station.items || [])
-                .find(item => item.orderId === orderId && item.foodId === itemId);
+        function viewItemDetails(itemId, dishName) {
+            const item = cookingData
+                .find(item => item.id === itemId);
             
             if (item) {
-                alert(`Item Details:\n\nName: ${item.foodName}\nTable: ${item.table}\nPax: ${item.pax}\nPriority: ${item.priority}\nStatus: ${item.status}\nPrep Time: ${item.preparationTime} min\nCook Time: ${item.cookingTime} min\nSpecial Requirements: ${item.requirement || 'None'}`);
+                alert(`Item Details:\n\nName: ${item.dish}\nTable: ${item.table}\nPriority: ${item.priority}\nStatus: ${item.status}\nPrep Time: ${item.prepTime} min\nCook Time: ${item.cookTime} min\nTotal Time: ${item.prepTime + item.cookTime} min\nStarted From: ${new Date(item.startedFrom).toLocaleString()}`);
             }
         }
 
@@ -959,6 +1385,66 @@
                 minute: '2-digit',
                 hour12: true
             });
+        }
+
+        // Get food ID for a dish (based on your database structure)
+        function getFoodId(dish) {
+            const foodIds = {
+                'Nasi Lemak': 'n1',
+                'Roti Telur': 'r1',
+                'Roti Canai': 'r2',
+                'Mee Goreng': 'm3',
+                'Maggi Goreng': 'm4',
+                'Sirap Bandung': 'd3',
+                'Teh Tarik': 'd1',
+                'Teh Tarik (Special)': 'd1'
+            };
+            return foodIds[dish] || 'unknown';
+        }
+
+        // Helper function to get priority level
+        function getPriority(dish) {
+            const priorityMap = {
+                'Nasi Lemak': 'high',
+                'Roti Telur': 'medium',
+                'Roti Canai': 'medium',
+                'Mee Goreng': 'high',
+                'Maggi Goreng': 'high',
+                'Sirap Bandung': 'low',
+                'Teh Tarik': 'low',
+                'Teh Tarik (Special)': 'medium'
+            };
+            return priorityMap[dish] || 'medium';
+        }
+
+        // Helper function to get prep time
+        function getPrepTime(dish) {
+            const prepTimes = {
+                'Nasi Lemak': 5,
+                'Roti Telur': 3,
+                'Roti Canai': 2,
+                'Mee Goreng': 4,
+                'Maggi Goreng': 3,
+                'Sirap Bandung': 1,
+                'Teh Tarik': 2,
+                'Teh Tarik (Special)': 3
+            };
+            return prepTimes[dish] || 3;
+        }
+
+        // Helper function to get cook time
+        function getCookTime(dish) {
+            const cookTimes = {
+                'Nasi Lemak': 8,
+                'Roti Telur': 5,
+                'Roti Canai': 3,
+                'Mee Goreng': 6,
+                'Maggi Goreng': 5,
+                'Sirap Bandung': 0,
+                'Teh Tarik': 1,
+                'Teh Tarik (Special)': 2
+            };
+            return cookTimes[dish] || 4;
         }
     </script>
 </body>

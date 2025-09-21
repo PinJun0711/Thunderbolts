@@ -21,6 +21,9 @@
       .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
       .menu-item { background: #0f1627; border: 1px solid #1f2a44; border-radius: 10px; padding: 0; cursor: pointer; transition: transform .05s ease, border-color .15s ease; overflow: hidden; text-align: left; }
       .menu-item:hover { transform: translateY(-1px); border-color: #3353ff; }
+      .menu-item.sold-out { opacity: 0.6; cursor: not-allowed; }
+      .menu-item.sold-out:hover { transform: none; border-color: #1f2a44; }
+      .sold-out-badge { background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 4px; display: inline-block; }
       .thumb { height: 120px; width: 100%; object-fit: cover; display: block; }
       .menu-meta { padding: 10px 12px; }
       .menu-item h3 { margin: 0 0 4px 0; font-size: 14px; color: #fff; }
@@ -65,8 +68,8 @@
               <label for="filter">Search</label>
               <input id="filter" type="text" placeholder="Type to filter..." />
             </div>
-            <a href="stock-dashboard.html" class="btn secondary" style="text-decoration: none;">📊 Stock</a>
-            <a href="cooking-dashboard.html" class="btn secondary" style="text-decoration: none;">🍳 Cooking</a>
+            <a href="/stock" class="btn secondary" style="text-decoration: none;">📊 Stock</a>
+            <a href="/cooking" class="btn secondary" style="text-decoration: none;">🍳 Cooking</a>
           </div>
         </header>
         <div class="menu">
@@ -80,8 +83,8 @@
           <div class="controls">
             <div class="field"><label for="table-display">Table</label><input id="table-display" type="text" disabled style="width:80px" placeholder="-" /></div>
             <div class="field"><label for="pax">Pax</label><input id="pax" type="number" min="1" value="1" style="width:80px"></div>
-            <a href="stock-dashboard.html" class="btn secondary" style="text-decoration: none;">📊 Stock</a>
-            <a href="cooking-dashboard.html" class="btn secondary" style="text-decoration: none;">🍳 Cooking</a>
+            <a href="/stock" class="btn secondary" style="text-decoration: none;">📊 Stock</a>
+            <a href="/cooking" class="btn secondary" style="text-decoration: none;">🍳 Cooking</a>
             <button class="btn secondary" id="clear-all">Clear</button>
           </div>
         </header>
@@ -135,6 +138,53 @@
     </div>
 
     <script>
+      // Configuration for API endpoints
+      const CONFIG = {
+        // Set to true to use Lambda endpoints, false for local server
+        USE_LAMBDA: false,
+        
+        // Lambda API Gateway URL (replace with your actual deployed URL)
+        LAMBDA_BASE_URL: 'https://7mx6s4t0m9.execute-api.ap-southeast-5.amazonaws.com/default',
+        
+        // Auto-detect base URL based on current location
+        getBaseUrl() {
+          if (this.USE_LAMBDA) {
+            return this.LAMBDA_BASE_URL;
+          }
+          
+          // If running on same server (EC2), use relative URLs
+          // If running locally, use localhost
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          
+          if (isLocalhost) {
+            return 'http://localhost:3000';
+          } else {
+            // On EC2 or any other server, use relative URLs (same origin)
+            return '';
+          }
+        },
+        
+        // API endpoint paths
+        ENDPOINTS: {
+          MENU: '/api/menu',
+          STOCK: '/api/stock',
+          ORDERS: '/api/orders',
+          ACTIVE_TABLES: '/api/active-tables',
+          COOKING_SEQUENCE: '/api/cooking-sequence', // MongoDB endpoint
+          FORECAST: '/api/forecast',
+          RESTOCK: '/api/stock/restock'
+        },
+        
+        // Get full URL for an endpoint
+        getUrl(endpoint) {
+          return this.getBaseUrl() + endpoint;
+        }
+      };
+      
+      // Export for use in other scripts
+      window.CONFIG = CONFIG;
+    </script>
+    <script>
       let MENU = [];
 
       const $ = (id) => document.getElementById(id);
@@ -156,10 +206,39 @@
           .filter(m => m.name.toLowerCase().includes(filter.toLowerCase()))
           .forEach(m => {
             const card = document.createElement('button');
-            card.className = 'menu-item';
+            card.className = `menu-item ${!m.isAvailable ? 'sold-out' : ''}`;
             const imgSrc = m.imageUrl || m.img || '';
-            card.innerHTML = `<img class="thumb" src="${imgSrc}" alt="${m.name}"><div class="menu-meta"><h3>${m.name}</h3><div class="price">RM ${Number(m.price || 0).toFixed(2)}</div></div>`;
-            card.addEventListener('click', () => addItem({ foodId: m.foodId || m.id, foodName: m.name, category: m.category || 'food', quantity: 1, spices: 'Normal', requirement: '', unitPrice: Number(m.price || 0), status: 'sent' }));
+            
+            let statusText = '';
+            if (!m.isAvailable) {
+              statusText = '<div class="sold-out-badge">SOLD OUT</div>';
+            }
+            
+            card.innerHTML = `
+              <img class="thumb" src="${imgSrc}" alt="${m.name}">
+              <div class="menu-meta">
+                <h3>${m.name}</h3>
+                <div class="price">RM ${Number(m.price || 0).toFixed(2)}</div>
+                ${statusText}
+              </div>
+            `;
+            
+            if (m.isAvailable) {
+              card.addEventListener('click', () => addItem({ 
+                foodId: m.foodId || m.id, 
+                foodName: m.name, 
+                category: m.category || 'food', 
+                quantity: 1, 
+                spices: 'Normal', 
+                requirement: '', 
+                unitPrice: Number(m.price || 0), 
+                status: 'sent' 
+              }));
+            } else {
+              card.style.cursor = 'not-allowed';
+              card.style.opacity = '0.6';
+            }
+            
             menuGrid.appendChild(card);
           });
       }
@@ -289,12 +368,25 @@
             $('status').textContent = 'Table in use';
             return;
           }
+          if (res.status === 400) {
+            const body = await res.json().catch(() => ({}));
+            if (body.unavailableItems && body.unavailableItems.length > 0) {
+              const unavailableNames = body.unavailableItems.map(item => `${item.foodName} (${item.quantity})`).join(', ');
+              showToast(`Sold out: ${unavailableNames}`);
+              $('status').textContent = 'Some items sold out';
+              // Refresh menu to update availability
+              loadMenu();
+              return;
+            }
+          }
           if (!res.ok) throw new Error('Failed');
-          await res.json();
+          const result = await res.json();
           showToast('Order sent');
           $('status').textContent = 'Saved';
           state.items = [];
           renderItems();
+          // Refresh menu to update availability after successful order
+          loadMenu();
         } catch (e) {
           console.error(e);
           $('status').textContent = 'Error saving';
@@ -304,12 +396,23 @@
 
       async function loadMenu() {
         try {
-          const res = await fetch('/api/menu');
-          if (!res.ok) throw new Error('Failed to load menu');
+          console.log('🔍 Loading menu...');
+          const res = await fetch(CONFIG.getUrl(CONFIG.ENDPOINTS.MENU));
+          console.log('📡 Menu response status:', res.status);
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ Menu API error:', res.status, errorText);
+            throw new Error(`Failed to load menu: ${res.status} ${errorText}`);
+          }
+          
           MENU = await res.json();
+          console.log('📋 Loaded menu items:', MENU.length);
+          console.log('📋 Menu items:', MENU.map(m => ({ name: m.name, isAvailable: m.isAvailable })));
         } catch (e) {
-          console.error(e);
+          console.error('❌ Load menu error:', e);
           MENU = [];
+          showToast('Error loading menu: ' + e.message);
         }
         renderMenu();
       }
