@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) {
   console.error('MONGODB_URI is not set');
@@ -87,6 +87,10 @@ const OrderSchema = new mongoose.Schema(
 const Order = mongoose.model('Order', OrderSchema);
 
 // Routes
+app.get('/', (req, res) => {
+  res.send("Hello from Thunderbolts on EC2!");
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
@@ -301,7 +305,7 @@ mongoose
     // Seed menu if empty
     seedMenuIfEmpty().catch((e) => console.error('Seed menu error:', e));
     seedStockIfEmpty().catch((e) => console.error('Seed stock error:', e));
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
