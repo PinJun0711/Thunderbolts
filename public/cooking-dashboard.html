@@ -554,14 +554,18 @@
             setInterval(loadCookingSequence, 30000);
         });
 
-        // Load cooking sequence from API
+        // Load cooking sequence from Lambda API
         async function loadCookingSequence() {
             try {
                 const url = CONFIG.getUrl(CONFIG.ENDPOINTS.COOKING_SEQUENCE);
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch cooking sequence');
                 
-                cookingData = await response.json();
+                const lambdaData = await response.json();
+                
+                // Transform Lambda data to our expected format
+                cookingData = transformLambdaData(lambdaData);
+                
                 renderCookingStations();
                 updateStats();
                 updateOptimizationInfo();
@@ -569,6 +573,138 @@
                 console.error('Error loading cooking sequence:', error);
                 showAlert('Error loading cooking sequence: ' + error.message, 'danger');
                 renderErrorState();
+            }
+        }
+
+        // Transform Lambda data format to our cooking stations format
+        function transformLambdaData(lambdaData) {
+            if (!lambdaData.cookingQueue || !Array.isArray(lambdaData.cookingQueue)) {
+                return { cookingStations: {} };
+            }
+
+            const cookingStations = {
+                'Hot Kitchen': [],
+                'Cold Prep': [],
+                'Grill Station': [],
+                'Fry Station': []
+            };
+
+            let totalItems = 0;
+            let totalOrders = new Set();
+
+            lambdaData.cookingQueue.forEach(dishGroup => {
+                const dishName = dishGroup.dish;
+                const batches = dishGroup.batch || [];
+
+                batches.forEach(batch => {
+                    totalItems += batch.quantity || 1;
+                    totalOrders.add(batch.orderId);
+
+                    // Determine cooking station based on dish name
+                    const stationName = getCookingStation(dishName);
+                    
+                    // Add cooking time estimates
+                    const cookingTime = getCookingTime(dishName);
+                    const preparationTime = getPreparationTime(dishName);
+                    const priority = getPriority(dishName);
+
+                    const cookingItem = {
+                        orderId: batch.orderId,
+                        foodId: dishName.toLowerCase().replace(/\s+/g, '_'),
+                        foodName: dishName,
+                        quantity: batch.quantity || 1,
+                        table: batch.table,
+                        pax: 1, // Default pax since not provided in Lambda data
+                        status: 'pending', // Default status
+                        cookingTime: cookingTime,
+                        preparationTime: preparationTime,
+                        priority: priority,
+                        totalTime: preparationTime + cookingTime,
+                        orderCreatedAt: new Date(batch.createdAt),
+                        requirement: '',
+                        spices: ''
+                    };
+
+                    cookingStations[stationName].push(cookingItem);
+                });
+            });
+
+            // Sort items within each station by priority and creation time
+            Object.keys(cookingStations).forEach(stationName => {
+                cookingStations[stationName].sort((a, b) => {
+                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                        return priorityOrder[b.priority] - priorityOrder[a.priority];
+                    }
+                    return new Date(a.orderCreatedAt) - new Date(b.orderCreatedAt);
+                });
+            });
+
+            return {
+                cookingStations,
+                totalItems,
+                totalOrders: totalOrders.size,
+                generatedAt: new Date().toISOString()
+            };
+        }
+
+        // Determine cooking station based on dish name
+        function getCookingStation(dishName) {
+            const name = dishName.toLowerCase();
+            
+            if (name.includes('drink') || name.includes('teh') || name.includes('milo') || 
+                name.includes('sirap') || name.includes('bandung')) {
+                return 'Cold Prep';
+            } else if (name.includes('roti') || name.includes('canai') || 
+                       name.includes('telur') || name.includes('grill')) {
+                return 'Grill Station';
+            } else if (name.includes('goreng') || name.includes('fried')) {
+                return 'Fry Station';
+            } else {
+                return 'Hot Kitchen';
+            }
+        }
+
+        // Get cooking time based on dish type
+        function getCookingTime(dishName) {
+            const name = dishName.toLowerCase();
+            
+            if (name.includes('roti') || name.includes('canai')) {
+                return 8;
+            } else if (name.includes('nasi') || name.includes('lemak')) {
+                return 12;
+            } else if (name.includes('goreng')) {
+                return 10;
+            } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
+                return 3;
+            } else {
+                return 15;
+            }
+        }
+
+        // Get preparation time based on dish type
+        function getPreparationTime(dishName) {
+            const name = dishName.toLowerCase();
+            
+            if (name.includes('roti') || name.includes('canai')) {
+                return 3;
+            } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
+                return 2;
+            } else {
+                return 5;
+            }
+        }
+
+        // Get priority based on dish type
+        function getPriority(dishName) {
+            const name = dishName.toLowerCase();
+            
+            if (name.includes('roti') || name.includes('canai') || name.includes('nasi')) {
+                return 'high';
+            } else if (name.includes('goreng')) {
+                return 'medium';
+            } else {
+                return 'low';
             }
         }
 
