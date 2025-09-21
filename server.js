@@ -292,6 +292,222 @@ app.post('/api/forecast', async (req, res) => {
   }
 });
 
+// Cooking sequence optimization endpoint
+app.get('/api/cooking-sequence', async (req, res) => {
+  try {
+    // Get all active orders (not completed)
+    const activeOrders = await Order.find({ status: { $ne: 'completed' } })
+      .sort({ createdAt: 1 }) // Oldest orders first
+      .lean();
+
+    // Extract all pending items from active orders
+    const pendingItems = [];
+    activeOrders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.status === 'pending' || item.status === 'sent') {
+          // Add cooking time estimates based on food type
+          let cookingTime = 15;
+          let preparationTime = 5;
+          let priority = 'medium';
+          
+          const name = item.foodName.toLowerCase();
+          if (name.includes('roti') || name.includes('canai')) {
+            cookingTime = 8;
+            preparationTime = 3;
+            priority = 'high';
+          } else if (name.includes('nasi') || name.includes('lemak')) {
+            cookingTime = 12;
+            preparationTime = 5;
+            priority = 'high';
+          } else if (name.includes('goreng')) {
+            cookingTime = 10;
+            preparationTime = 4;
+            priority = 'medium';
+          } else if (name.includes('drink') || name.includes('teh') || name.includes('milo')) {
+            cookingTime = 3;
+            preparationTime = 2;
+            priority = 'low';
+          }
+          
+          pendingItems.push({
+            ...item,
+            orderId: order._id,
+            table: order.table,
+            pax: order.pax,
+            orderCreatedAt: order.createdAt,
+            cookingTime,
+            preparationTime,
+            priority,
+            totalTime: preparationTime + cookingTime
+          });
+        }
+      });
+    });
+
+    // Optimize cooking sequence using multiple algorithms
+    const optimizedSequence = optimizeCookingSequence(pendingItems);
+
+    // Group by cooking stations (simulate different cooking areas)
+    const cookingStations = groupByCookingStations(optimizedSequence);
+
+    // Calculate estimated completion times
+    const estimatedTimes = calculateCompletionTimes(cookingStations);
+
+    res.json({
+      cookingSequence: optimizedSequence,
+      cookingStations,
+      estimatedTimes,
+      totalItems: pendingItems.length,
+      totalOrders: activeOrders.length,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Cooking sequence error:', err);
+    res.status(500).json({ error: 'Failed to generate cooking sequence' });
+  }
+});
+
+// Update order item status
+app.post('/api/cooking-sequence', async (req, res) => {
+  try {
+    const { orderId, itemId, status } = req.body;
+
+    if (!orderId || !itemId || !status) {
+      return res.status(400).json({ error: 'orderId, itemId, and status are required' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Update the specific item status
+    const item = order.items.find(item => item.foodId === itemId);
+    if (item) {
+      item.status = status;
+      
+      // If all items are completed, mark the order as completed
+      const allCompleted = order.items.every(item => item.status === 'completed');
+      if (allCompleted) {
+        order.status = 'completed';
+        order.completedAt = new Date();
+      }
+      
+      await order.save();
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Item status updated to ${status}`,
+      order: order
+    });
+  } catch (err) {
+    console.error('Update order status error:', err);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// Helper functions for cooking sequence optimization
+function optimizeCookingSequence(items) {
+  if (items.length === 0) return [];
+
+  // Multiple optimization strategies
+  const scored = items.map(item => {
+    let score = 0;
+    
+    // Priority score (higher priority = higher score)
+    const priorityScore = { high: 100, medium: 50, low: 0 };
+    score += priorityScore[item.priority] * 0.4;
+    
+    // Time score (shorter time = higher score)
+    score += (60 - item.totalTime) * 0.3;
+    
+    // Table order score (earlier table = higher score)
+    const tableNum = parseInt(item.table) || 10;
+    score += (11 - tableNum) * 10 * 0.3;
+    
+    // Order age score (older orders = higher score)
+    const ageMinutes = (new Date() - new Date(item.orderCreatedAt)) / (1000 * 60);
+    score += Math.min(ageMinutes * 2, 50);
+    
+    return { ...item, score };
+  });
+
+  return scored.sort((a, b) => b.score - a.score);
+}
+
+function groupByCookingStations(sequence) {
+  // Simulate different cooking stations
+  const stations = {
+    'Hot Kitchen': [], // Main dishes, rice, noodles
+    'Cold Prep': [],   // Salads, drinks
+    'Grill Station': [], // Grilled items
+    'Fry Station': []   // Fried items
+  };
+
+  sequence.forEach(item => {
+    const category = (item.category || 'food').toLowerCase();
+    const name = item.foodName.toLowerCase();
+    
+    if (name.includes('drink') || name.includes('teh') || name.includes('milo') || 
+        name.includes('sirap') || category === 'drinks') {
+      stations['Cold Prep'].push(item);
+    } else if (name.includes('roti') || name.includes('canai') || 
+               name.includes('telur') || name.includes('grill')) {
+      stations['Grill Station'].push(item);
+    } else if (name.includes('goreng') || name.includes('fried')) {
+      stations['Fry Station'].push(item);
+    } else {
+      stations['Hot Kitchen'].push(item);
+    }
+  });
+
+  return stations;
+}
+
+function calculateCompletionTimes(stations) {
+  const times = {};
+  let currentTime = new Date();
+
+  Object.entries(stations).forEach(([stationName, items]) => {
+    if (items.length === 0) {
+      times[stationName] = { estimatedStart: null, estimatedComplete: null, totalTime: 0 };
+      return;
+    }
+
+    let stationStartTime = new Date(currentTime);
+    let cumulativeTime = 0;
+    
+    const itemTimeline = items.map((item, index) => {
+      const startTime = new Date(stationStartTime.getTime() + cumulativeTime * 60000);
+      const prepTime = item.preparationTime || 5;
+      const cookingTime = item.cookingTime || 15;
+      const totalItemTime = prepTime + cookingTime;
+      
+      const timeline = {
+        ...item,
+        stationStartTime: startTime,
+        prepStartTime: startTime,
+        cookingStartTime: new Date(startTime.getTime() + prepTime * 60000),
+        readyTime: new Date(startTime.getTime() + totalItemTime * 60000),
+        estimatedMinutes: totalItemTime
+      };
+      
+      cumulativeTime += totalItemTime;
+      return timeline;
+    });
+
+    times[stationName] = {
+      estimatedStart: stationStartTime,
+      estimatedComplete: new Date(stationStartTime.getTime() + cumulativeTime * 60000),
+      totalTime: cumulativeTime,
+      items: itemTimeline
+    };
+  });
+
+  return times;
+}
+
 // Fallback to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

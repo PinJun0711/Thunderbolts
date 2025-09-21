@@ -83,6 +83,23 @@ functions:
           method: post
           cors: true
 
+  # Cooking efficiency endpoints
+  getCookingSequence:
+    handler: handlers/cooking-efficiency.handler
+    events:
+      - http:
+          path: /api/cooking-sequence
+          method: get
+          cors: true
+
+  updateCookingStatus:
+    handler: handlers/cooking-efficiency.handler
+    events:
+      - http:
+          path: /api/cooking-sequence
+          method: post
+          cors: true
+
   # SageMaker endpoints
   trainModel:
     handler: handlers/sagemaker.handler

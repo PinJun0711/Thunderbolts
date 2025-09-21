@@ -6,6 +6,7 @@
     <title>Stock Dashboard - Thunderbolts Restaurant</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -438,6 +439,7 @@
         <nav class="navigation">
             <a href="index.html" class="nav-link">POS System</a>
             <a href="stock-dashboard.html" class="nav-link active">Stock Dashboard</a>
+            <a href="cooking-dashboard.html" class="nav-link">Cooking Efficiency</a>
         </nav>
 
         <!-- Header -->
@@ -563,7 +565,8 @@
         // Load stock data from API
         async function loadStockData() {
             try {
-                const response = await fetch('/api/stock');
+                const url = CONFIG.getUrl(CONFIG.ENDPOINTS.STOCK);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch stock data');
                 
                 stockData = await response.json();

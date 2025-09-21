@@ -63,6 +63,23 @@ functions:
           method: get
           cors: true
 
+  # Cooking efficiency endpoints
+  getCookingSequence:
+    handler: handlers/cooking-efficiency.handler
+    events:
+      - http:
+          path: /api/cooking-sequence
+          method: get
+          cors: true
+
+  updateCookingStatus:
+    handler: handlers/cooking-efficiency.handler
+    events:
+      - http:
+          path: /api/cooking-sequence
+          method: post
+          cors: true
+
   # Scheduled data export (runs daily)
   scheduledExport:
     handler: handlers/sagemaker-training.handler
