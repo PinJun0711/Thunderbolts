@@ -60,9 +60,12 @@
       <section class="panel">
         <header>
           <div class="title">Menu</div>
-          <div class="controls field">
-            <label for="filter">Search</label>
-            <input id="filter" type="text" placeholder="Type to filter..." />
+          <div class="controls">
+            <div class="field">
+              <label for="filter">Search</label>
+              <input id="filter" type="text" placeholder="Type to filter..." />
+            </div>
+            <a href="stock-dashboard.html" class="btn secondary" style="text-decoration: none;">📊 Stock Dashboard</a>
           </div>
         </header>
         <div class="menu">
@@ -76,6 +79,7 @@
           <div class="controls">
             <div class="field"><label for="table-display">Table</label><input id="table-display" type="text" disabled style="width:80px" placeholder="-" /></div>
             <div class="field"><label for="pax">Pax</label><input id="pax" type="number" min="1" value="1" style="width:80px"></div>
+            <a href="stock-dashboard.html" class="btn secondary" style="text-decoration: none;">📊 Stock</a>
             <button class="btn secondary" id="clear-all">Clear</button>
           </div>
         </header>
@@ -153,7 +157,7 @@
             card.className = 'menu-item';
             const imgSrc = m.imageUrl || m.img || '';
             card.innerHTML = `<img class="thumb" src="${imgSrc}" alt="${m.name}"><div class="menu-meta"><h3>${m.name}</h3><div class="price">RM ${Number(m.price || 0).toFixed(2)}</div></div>`;
-            card.addEventListener('click', () => addItem({ foodId: m.foodId || m.id, foodName: m.name, category: m.category || 'food', quantity: 1, spices: 'Normal', requirement: '', unitPrice: Number(m.price || 0) }));
+            card.addEventListener('click', () => addItem({ foodId: m.foodId || m.id, foodName: m.name, category: m.category || 'food', quantity: 1, spices: 'Normal', requirement: '', unitPrice: Number(m.price || 0), status: 'sent' }));
             menuGrid.appendChild(card);
           });
       }
@@ -180,7 +184,7 @@
           li.innerHTML = `
             <div>
               <h4>${it.foodName}</h4>
-              <div class="meta">RM ${unit.toFixed(2)} × ${it.quantity} = RM ${line.toFixed(2)} · Spices: ${it.spices || '-'} · Req: ${it.requirement || '-'}</div>
+              <div class="meta">RM ${unit.toFixed(2)} × ${it.quantity} = RM ${line.toFixed(2)} · Spices: ${it.spices || '-'} · Req: ${it.requirement || '-'} · Status: ${it.status || 'pending'}</div>
             </div>
             <div class="row-actions">
               <button class="btn secondary" data-edit="${idx}">Edit</button>
@@ -252,7 +256,7 @@
         const sp = $('edit-spices').value.trim();
         const req = $('edit-req').value.trim();
         const current = state.items[editingIndex];
-        state.items[editingIndex] = { ...current, quantity: qty, spices: sp, requirement: req };
+        state.items[editingIndex] = { ...current, quantity: qty, spices: sp, requirement: req, status: 'sent' };
         editModal.classList.remove('open');
         editingIndex = -1;
         renderItems();

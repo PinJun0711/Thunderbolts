@@ -30,7 +30,10 @@ const StockItemSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true },
     unit: { type: String, required: true },
-    quantityAvailable: { type: Number, required: true, default: 0 }
+    quantityAvailable: { type: Number, required: true, default: 0 },
+    costPerUnit: { type: Number, default: 0 },
+    minimumThreshold: { type: Number, default: 10 },
+    maximumThreshold: { type: Number, default: 100 }
   },
   { timestamps: true }
 );
@@ -63,7 +66,8 @@ const OrderItemSchema = new mongoose.Schema(
     unitPrice: { type: Number, required: false },
     lineTotal: { type: Number, required: false },
     spices: { type: String, default: '' },
-    requirement: { type: String, default: '' }
+    requirement: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'preparing', 'ready', 'completed'], default: 'pending' }
   },
   { _id: false }
 );
@@ -139,7 +143,13 @@ app.post('/api/orders', async (req, res) => {
       const menu = idToMenu.get(i.foodId);
       const unitPrice = round2(menu ? menu.price : 0);
       const lineTotal = round2(unitPrice * i.quantity);
-      return { ...i, unitPrice, lineTotal, foodName: i.foodName || menu?.name || 'Unknown' };
+      return { 
+        ...i, 
+        unitPrice, 
+        lineTotal, 
+        foodName: i.foodName || menu?.name || 'Unknown',
+        status: 'sent' // Match the order status when order is sent
+      };
     });
     const totalAmount = enriched.reduce((sum, it) => sum + (it.lineTotal || 0), 0);
     const totalAmountRounded = round2(totalAmount);
@@ -193,6 +203,88 @@ app.post('/api/orders/:id/complete', async (req, res) => {
   } catch (err) {
     console.error('Complete order error:', err);
     res.status(500).json({ error: 'Failed to complete order' });
+  }
+});
+
+// Restock endpoint
+app.post('/api/stock/restock', async (req, res) => {
+  try {
+    const { itemId, quantity, cost } = req.body;
+    
+    if (!itemId || !quantity || quantity <= 0) {
+      return res.status(400).json({ error: 'Invalid item ID or quantity' });
+    }
+
+    const item = await StockItem.findById(itemId);
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Update quantity
+    item.quantityAvailable += quantity;
+    
+    // Update cost if provided
+    if (cost > 0) {
+      item.costPerUnit = cost;
+    }
+    
+    await item.save();
+    
+    res.json({
+      success: true,
+      item: {
+        _id: item._id,
+        name: item.name,
+        unit: item.unit,
+        quantityAvailable: item.quantityAvailable,
+        costPerUnit: item.costPerUnit
+      }
+    });
+  } catch (err) {
+    console.error('Restock error:', err);
+    res.status(500).json({ error: 'Failed to restock item' });
+  }
+});
+
+// Forecast endpoint (for SageMaker integration)
+app.post('/api/forecast', async (req, res) => {
+  try {
+    const { items } = req.body;
+    
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Items array is required' });
+    }
+
+    // For now, return mock forecast data
+    // In production, this would call your SageMaker LSTM endpoint
+    const mockForecast = {
+      predictions: items.map(item => {
+        const currentStock = item.currentStock || 0;
+        const predicted7days = Math.max(0, currentStock - (Math.random() * 10));
+        const predicted30days = Math.max(0, currentStock - (Math.random() * 50));
+        
+        let recommendation = 'Good';
+        if (predicted7days <= 0) {
+          recommendation = 'Restock';
+        } else if (predicted30days <= 10) {
+          recommendation = 'Monitor';
+        }
+        
+        return {
+          name: item.name,
+          currentStock: currentStock,
+          predicted7days: predicted7days,
+          predicted30days: predicted30days,
+          recommendation: recommendation,
+          unit: item.unit
+        };
+      })
+    };
+
+    res.json(mockForecast);
+  } catch (err) {
+    console.error('Forecast error:', err);
+    res.status(500).json({ error: 'Failed to generate forecast' });
   }
 });
 

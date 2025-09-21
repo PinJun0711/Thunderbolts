@@ -15,7 +15,8 @@ const OrderItemSchema = new mongoose.Schema({
   unitPrice: { type: Number, required: false },
   lineTotal: { type: Number, required: false },
   spices: { type: String, default: '' },
-  requirement: { type: String, default: '' }
+  requirement: { type: String, default: '' },
+  status: { type: String, enum: ['pending', 'preparing', 'ready', 'completed'], default: 'pending' }
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({
@@ -139,7 +140,13 @@ async function createOrder(orderData) {
     const menu = idToMenu.get(i.foodId);
     const unitPrice = round2(menu ? menu.price : 0);
     const lineTotal = round2(unitPrice * i.quantity);
-    return { ...i, unitPrice, lineTotal, foodName: i.foodName || menu?.name || 'Unknown' };
+    return { 
+      ...i, 
+      unitPrice, 
+      lineTotal, 
+      foodName: i.foodName || menu?.name || 'Unknown',
+      status: 'sent' // Match the order status when order is sent
+    };
   });
   
   const totalAmount = enriched.reduce((sum, it) => sum + (it.lineTotal || 0), 0);

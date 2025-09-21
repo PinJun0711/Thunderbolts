@@ -21,7 +21,8 @@ const OrderSchema = new mongoose.Schema({
     unitPrice: { type: Number, required: false },
     lineTotal: { type: Number, required: false },
     spices: { type: String, default: '' },
-    requirement: { type: String, default: '' }
+    requirement: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'preparing', 'ready', 'completed'], default: 'pending' }
   }],
   totalAmount: { type: Number, default: 0 },
   status: { type: String, enum: ['pending', 'sent', 'completed'], default: 'pending' },
