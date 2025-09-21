@@ -86,6 +86,29 @@ const OrderSchema = new mongoose.Schema(
 
 const Order = mongoose.model('Order', OrderSchema);
 
+// Forecast Schema
+const ForecastSchema = new mongoose.Schema(
+  {
+    timestamp: { type: Date, default: Date.now },
+    dishes: [{
+      foodId: { type: String, required: true },
+      FoodName: { type: String, required: true },
+      "7-Day Forecast": { type: Number, required: true },
+      "30-Day Forecast": { type: Number, required: true }
+    }],
+    stock: [{
+      Ingredient: { type: String, required: true },
+      Unit: { type: String, required: true },
+      "7-Day Usage": { type: Number, required: true },
+      "30-Day Usage": { type: Number, required: true }
+    }],
+    daily: mongoose.Schema.Types.Mixed // Store the daily forecast arrays
+  },
+  { timestamps: true }
+);
+
+const Forecast = mongoose.model('Prediction', ForecastSchema);
+
 // Routes
 app.get('/', (req, res) => {
   res.send("Hello from Thunderbolts on EC2!");
@@ -250,7 +273,47 @@ app.post('/api/stock/restock', async (req, res) => {
   }
 });
 
-// Forecast endpoint (for SageMaker integration)
+// Get latest forecast data
+app.get('/api/forecast/latest', async (req, res) => {
+  try {
+    const latestForecast = await Forecast.findOne().sort({ timestamp: -1 });
+    
+    if (!latestForecast) {
+      return res.status(404).json({ error: 'No forecast data available' });
+    }
+
+    res.json(latestForecast);
+  } catch (err) {
+    console.error('Get forecast error:', err);
+    res.status(500).json({ error: 'Failed to fetch forecast data' });
+  }
+});
+
+// Save forecast data
+app.post('/api/forecast/save', async (req, res) => {
+  try {
+    const forecastData = req.body;
+    
+    // Validate required fields
+    if (!forecastData.dishes || !forecastData.stock || !forecastData.daily) {
+      return res.status(400).json({ error: 'Missing required forecast data' });
+    }
+
+    const forecast = new Forecast(forecastData);
+    await forecast.save();
+    
+    res.json({ 
+      success: true, 
+      message: 'Forecast data saved successfully',
+      id: forecast._id 
+    });
+  } catch (err) {
+    console.error('Save forecast error:', err);
+    res.status(500).json({ error: 'Failed to save forecast data' });
+  }
+});
+
+// Forecast endpoint (mock data for testing)
 app.post('/api/forecast', async (req, res) => {
   try {
     const { items } = req.body;
@@ -259,8 +322,7 @@ app.post('/api/forecast', async (req, res) => {
       return res.status(400).json({ error: 'Items array is required' });
     }
 
-    // For now, return mock forecast data
-    // In production, this would call your SageMaker LSTM endpoint
+    // Return mock forecast data for testing
     const mockForecast = {
       predictions: items.map(item => {
         const currentStock = item.currentStock || 0;
