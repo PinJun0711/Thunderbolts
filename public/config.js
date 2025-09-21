@@ -3,13 +3,13 @@
 
 const CONFIG = {
   // Set to true to use Lambda endpoints, false for local server
-  USE_LAMBDA: true,
+  USE_LAMBDA: false,
   
   // Lambda API Gateway URL (replace with your actual deployed URL)
   LAMBDA_BASE_URL: 'https://your-api-id.execute-api.ap-southeast-5.amazonaws.com/dev',
   
   // Local server URL
-  LOCAL_BASE_URL: '',
+  LOCAL_BASE_URL: 'http://localhost:3000',
   
   // Get the current base URL based on configuration
   getBaseUrl() {
