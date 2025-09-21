@@ -1,19 +1,29 @@
 // Configuration for API endpoints
-// Set USE_LAMBDA to true when deployed, false for local development
+// Automatically detects if running locally or on server
 
 const CONFIG = {
-  // Set to true to use Lambda endpoints, false for local server
+  // Auto-detect environment
   USE_LAMBDA: false,
   
   // Lambda API Gateway URL (replace with your actual deployed URL)
   LAMBDA_BASE_URL: 'https://your-api-id.execute-api.ap-southeast-5.amazonaws.com/dev',
   
-  // Local server URL
-  LOCAL_BASE_URL: 'http://localhost:3000',
-  
-  // Get the current base URL based on configuration
+  // Auto-detect base URL based on current location
   getBaseUrl() {
-    return this.USE_LAMBDA ? this.LAMBDA_BASE_URL : this.LOCAL_BASE_URL;
+    if (this.USE_LAMBDA) {
+      return this.LAMBDA_BASE_URL;
+    }
+    
+    // If running on same server (EC2), use relative URLs
+    // If running locally, use localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      return 'http://localhost:3000';
+    } else {
+      // On EC2 or any other server, use relative URLs (same origin)
+      return '';
+    }
   },
   
   // API endpoint paths
